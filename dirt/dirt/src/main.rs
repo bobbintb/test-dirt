@@ -30,9 +30,13 @@ async fn main() -> anyhow::Result<()> {
         // This can happen if you remove all log statements from your eBPF program.
         warn!("failed to initialize eBPF logger: {e}");
     }
-    let program: &mut KProbe = ebpf.program_mut("dirt").unwrap().try_into()?;
-    program.load()?;
-    program.attach("security_inode_unlink", 0)?;
+    let program_unlink: &mut KProbe = ebpf.program_mut("dirt").unwrap().try_into()?;
+    program_unlink.load()?;
+    program_unlink.attach("security_inode_unlink", 0)?;
+
+    let program_rename: &mut KProbe = ebpf.program_mut("dirt_rename").unwrap().try_into()?;
+    program_rename.load()?;
+    program_rename.attach("security_inode_rename", 0)?;
 
     let ctrl_c = signal::ctrl_c();
     println!("Waiting for Ctrl-C...");

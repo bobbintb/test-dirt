@@ -13,7 +13,20 @@ pub fn dirt(ctx: ProbeContext) -> u32 {
 }
 
 fn try_dirt(ctx: ProbeContext) -> Result<u32, u32> {
-    info!(&ctx, "kprobe called");
+    info!(&ctx, "kprobe UNLINK called");
+    Ok(0)
+}
+
+#[kprobe]
+pub fn dirt_rename(ctx: ProbeContext) -> u32 {
+    match try_dirt_rename(ctx) {
+        Ok(ret) => ret,
+        Err(ret) => ret,
+    }
+}
+
+fn try_dirt_rename(ctx: ProbeContext) -> Result<u32, u32> {
+    info!(&ctx, "kprobe RENAME called");
     Ok(0)
 }
 
