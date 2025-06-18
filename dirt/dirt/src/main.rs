@@ -1,11 +1,13 @@
 use aya::programs::KProbe;
 #[rustfmt::skip]
-use log::{debug, warn};
+use log::{debug, warn, LevelFilter}; // Added LevelFilter
 use tokio::signal;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    env_logger::init();
+    env_logger::Builder::new()
+        .filter_level(LevelFilter::Info) // Set default filter to Info
+        .init();
 
     // Bump the memlock rlimit. This is needed for older kernels that don't use the
     // new memcg based accounting, see https://lwn.net/Articles/837122/
@@ -30,13 +32,12 @@ async fn main() -> anyhow::Result<()> {
         // This can happen if you remove all log statements from your eBPF program.
         warn!("failed to initialize eBPF logger: {e}");
     }
-    let program_unlink: &mut KProbe = ebpf.program_mut("dirt").unwrap().try_into()?;
-    program_unlink.load()?;
-    program_unlink.attach("security_inode_unlink", 0)?;
-
-    let program_rename: &mut KProbe = ebpf.program_mut("dirt_rename").unwrap().try_into()?;
-    program_rename.load()?;
-    program_rename.attach("security_inode_rename", 0)?;
+    let program_clone: &mut KProbe = ebpf.program_mut("dirt_test_clone").unwrap().try_into()?;
+    program_clone.load()?;
+    // Attempt to attach to a common kernel symbol. The exact name might vary.
+    // Common names are __x64_sys_clone, ksys_clone, or do_clone.
+    // Using __x64_sys_clone as a common one for modern x86_64.
+    program_clone.attach("__x64_sys_clone", 0)?;
 
     let ctrl_c = signal::ctrl_c();
     println!("Waiting for Ctrl-C...");
