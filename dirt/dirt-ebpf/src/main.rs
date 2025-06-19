@@ -1,27 +1,32 @@
 #![no_std]
 #![no_main]
 
-use aya_ebpf::{
-    macros::kprobe,
-    programs::ProbeContext, // Keep for now, might be needed by macro, or change to PtRegs if directly usable
-    bindings::pt_regs,     // Import PtRegs
-};
-// use aya_log_ebpf::info; // Commenting out info for now
+use aya_ebpf::{macros::kprobe, programs::ProbeContext}; // Restored ProbeContext
+use aya_log_ebpf::info; // Re-enable info for the original intent of the test
 
 #[kprobe]
-// pub fn dirt_test_clone(ctx: ProbeContext) -> u32 { // Old signature
-pub fn dirt_test_clone(ctx: *const pt_regs) -> u32 { // New signature using raw pt_regs pointer
-    match try_dirt_test_clone(ctx) {
+pub fn dirt(ctx: ProbeContext) -> u32 {
+    match try_dirt(ctx) {
         Ok(ret) => ret,
         Err(ret) => ret,
     }
 }
 
-// fn try_dirt_test_clone(_ctx: ProbeContext) -> Result<u32, u32> { // Old signature
-fn try_dirt_test_clone(_ctx: *const pt_regs) -> Result<u32, u32> { // New signature
-    // If we were to use ctx, it would be via unsafe dereference:
-    // let pc = unsafe { (*ctx).pc };
-    // info!(&ctx, "kprobe CLONE called at pc: {}", pc); // This would require info! and careful context wrapping for logging
+fn try_dirt(ctx: ProbeContext) -> Result<u32, u32> {
+    info!(&ctx, "kprobe UNLINK called");
+    Ok(0)
+}
+
+#[kprobe]
+pub fn dirt_rename(ctx: ProbeContext) -> u32 {
+    match try_dirt_rename(ctx) {
+        Ok(ret) => ret,
+        Err(ret) => ret,
+    }
+}
+
+fn try_dirt_rename(ctx: ProbeContext) -> Result<u32, u32> {
+    info!(&ctx, "kprobe RENAME called");
     Ok(0)
 }
 
