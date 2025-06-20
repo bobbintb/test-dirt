@@ -12,6 +12,7 @@ aya-log-ebpf = { workspace = true }
 [build-dependencies]
 which = { workspace = true }
 
-[[bin]]
-name = "dirt"
+[lib]
+name = "dirt_ebpf" # Library name, can be different from package name
 path = "src/main.rs"
+crate-type = ["dylib"]
