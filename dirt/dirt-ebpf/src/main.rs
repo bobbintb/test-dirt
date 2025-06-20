@@ -1,8 +1,9 @@
 #![no_std]
 #![no_main]
 
-use aya_ebpf::{macros::kprobe, programs::ProbeContext}; // Restored ProbeContext
-use aya_log_ebpf::info; // Re-enable info for the original intent of the test
+use aya_ebpf::{macros::kprobe, programs::ProbeContext};
+use aya_log_ebpf::info;
+// Removed bindings::dentry, helpers::gen::bpf_get_d_path_name, cty::c_char, core::str and MAX_PATH_LEN
 
 #[kprobe]
 pub fn dirt(ctx: ProbeContext) -> u32 {
