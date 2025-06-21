@@ -2,15 +2,21 @@
 name = "dirt-ebpf"
 version = "0.1.0"
 edition = "2021"
-publish = false
+publish = false # Keep publish setting as is
 
 [dependencies]
-aya-ebpf = { git = "https://github.com/aya-rs/aya", features = ["btf"] } # Added "btf" feature
+aya-ebpf = { git = "https://github.com/aya-rs/aya", features = ["btf"] }
 aya-log-ebpf = { git = "https://github.com/aya-rs/aya" }
-dirt-common = { path = "../dirt-common" }
+dirt-common = { path = "../dirt-common" } # Ensure this path
+
+# Assuming no other direct dependencies are needed for dirt-ebpf based on previous steps.
+# If using workspace inheritance for aya-ebpf etc., that would look like:
+# aya-ebpf = { workspace = true, features = ["btf"] }
+# aya-log-ebpf = { workspace = true }
+# For now, keeping the explicit git dependencies as read.
 
 [[bin]]
-name = "dirt"
+name = "dirt" # The eBPF binary output name
 path = "src/main.rs"
 
 [profile.dev]
@@ -35,4 +41,4 @@ incremental = false
 codegen-units = 1
 rpath = false
 
-[workspace]
+[workspace] # Keep empty workspace section as is from read_files output
