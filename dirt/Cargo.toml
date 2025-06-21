@@ -1,41 +1,48 @@
-[package]
-name = "dirt"
+[workspace]
+resolver = "2" # Enable new feature resolver
+members = [
+    "dirt",         # Path to the user-space application crate (e.g., directory ./dirt/)
+    "dirt-common",  # Path to the common library crate (e.g., directory ./dirt-common/)
+    "dirt-ebpf",    # Path to the eBPF crate (e.g., directory ./dirt-ebpf/)
+]
+
+# Shared package metadata for all workspace members
+[workspace.package]
 version = "0.1.0"
 edition = "2021"
+license = "Dual MIT/GPL" # Define the license here
+authors = ["Your Name <you@example.com>"] # Placeholder, should be updated
+# repository = "..." # Optional: Add repo URL
+# description = "..." # Optional: Add description
 
-# Assuming license is inherited from workspace or defined elsewhere.
-# If not, it should be:
-# license = "MIT OR Apache-2.0"
-license.workspace = true # Keep if workspace is used
+# Shared dependencies for all workspace members
+# Versions are defined here, members use `some_dep.workspace = true`
+[workspace.dependencies]
+anyhow = "1.0"
+aya = { git = "https://github.com/aya-rs/aya", features = ["async_tokio"] }
+aya-log = { git = "https://github.com/aya-rs/aya" }
+aya-ebpf = { git = "https://github.com/aya-rs/aya", features = ["btf"] }
+aya-log-ebpf = { git = "https://github.com/aya-rs/aya" }
+aya-bpf = { git = "https://github.com/aya-rs/aya" } # For dirt-common, assuming same git source for consistency
+aya-build = "0.2" # Or specific version / git
 
-[dependencies]
-dirt-common = { path = "../dirt-common", features = ["user"] } # Ensure this path
-
-anyhow = { workspace = true, default-features = true }
-aya = { workspace = true }
-aya-log = { workspace = true }
-clap = { workspace = true, features = ["derive"] } # Added from previous steps, ensure it's here
-chrono = { workspace = true, features = ["serde"] } # Added from previous steps
-daemonize = { workspace = true } # Added from previous steps
-env_logger = { workspace = true }
-libc = { workspace = true }
-log = { workspace = true }
-serde = { workspace = true, features = ["derive"] } # Added from previous steps
-serde_json = { workspace = true } # Added from previous steps
-tokio = { workspace = true, features = [
+clap = { version = "4.0", features = ["derive"] }
+chrono = { version = "0.4", features = ["serde"] }
+daemonize = "0.5"
+env_logger = "0.10" # Using 0.10 as per user-space Cargo.toml
+libc = "0.2"
+log = "0.4"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tokio = { version = "1", features = [
     "macros",
-    "rt",
+    "rt", # rt implies rt-multi-thread in tokio 1.x
     "rt-multi-thread",
     "net",
     "signal",
 ] }
 
-[build-dependencies]
-anyhow = { workspace = true }
-aya-build = { workspace = true }
-# The comment about dirt-ebpf dependency is kept as is from the read_files output.
-dirt-ebpf = { path = "../dirt-ebpf" }
-
-[[bin]]
-name = "dirt"
-path = "src/main.rs"
+# Note: The original build-dependency on dirt-ebpf from the user-space app
+# (dirt-ebpf = { path = "../dirt-ebpf" }) is a direct path dependency
+# and typically wouldn't be managed under [workspace.dependencies] unless it was published
+# or also a git dependency. It will be handled in the user-space app's Cargo.toml.

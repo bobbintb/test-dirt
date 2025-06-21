@@ -1,11 +1,16 @@
 [package]
 name = "dirt-common"
-version = "0.1.0"
-edition = "2021"
-publish = false
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+# repository.workspace = true # Optional
+# description.workspace = true # Optional
+publish = false # This crate-specific setting is preserved
 
 [dependencies]
-aya-bpf = { git = "https://github.com/aya-rs/aya", features = ["async_tokio"] }
+# Inherit from workspace, but specify needed features locally if not default in workspace
+aya-bpf = { workspace = true, features = ["async_tokio"] }
 
 [lib]
-path = "src/lib.rs"
+path = "src/lib.rs" # Standard library path definition
