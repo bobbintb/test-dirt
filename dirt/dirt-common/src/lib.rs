@@ -61,6 +61,7 @@ pub struct RecordFs {
     pub dev: u64,   // Device ID
     pub mode: u32,  // File mode
     pub size: u64,  // File size
+    pub nlink: u32, // Number of hard links
     // Timestamps from BPF context
     pub time_ns: u64, // Timestamp in nanoseconds
     pub boot_time_ns: u64, // Boot time in nanoseconds
