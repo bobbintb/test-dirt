@@ -19,12 +19,6 @@ pub struct Record {
     pub ts: u64,
 }
 
-// Ensure this struct is Pod (Plain Old Data) for Aya.
-// This means it should not have any padding bytes.
-// We might need to manually add padding fields if necessary
-// or use #[repr(packed)] if appropriate, though that can have
-// performance implications and unaligned access issues.
-// For now, let's define it directly and review alignment later if issues arise.
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]
 pub struct RecordFs {
@@ -40,28 +34,11 @@ pub struct RecordFs {
     pub ctime_nsec: u64,
     pub isize_first: u64,
     pub filepath: [u8; FILEPATH_LEN_MAX],
-    // Union in C:
-    // union {
-    //     struct {
-    //         char filename_from[FILENAME_LEN_MAX / 2];
-    //         char filename_to[FILENAME_LEN_MAX / 2];
-    //     };
-    //     char filename[FILENAME_LEN_MAX];
-    // };
-    // In Rust, we can represent this with a single array for `filename`
-    // and handle the split logic (for MOVED_FROM/MOVED_TO) in the
-    // user-space code when interpreting the event.
-    // Or, we can use a specific struct for the from/to case if we
-    // add a field to distinguish. For simplicity with Pod, a single array is easier.
-    pub filename_union: [u8; FILENAME_LEN_MAX], // Represents the union
+    pub filename_union: [u8; FILENAME_LEN_MAX],
 }
 
-// Check if RecordFs is Pod. This is a compile-time check.
-// If it's not Pod, the build will fail, and we'll need to adjust.
 unsafe impl aya_bpf::Pod for RecordFs {}
 
-// Filesystem event indices from enum INDEX_FS_EVENT in dirt.h
-// These will be used as indices into the `event: [u32; FS_EVENT_MAX]` array in RecordFs
 #[repr(usize)]
 #[derive(Debug, Copy, Clone)]
 pub enum FsEventIndex {
@@ -82,9 +59,6 @@ pub enum FsEventIndex {
     QOverflow,
 }
 
-// For the JSON output, based on enum INDEX_JSON_KEY
-// We'll use these when serializing to JSON in user-space.
-// Not strictly needed in common, but can be useful for consistency.
 #[derive(Debug, Copy, Clone)]
 pub enum JsonKeyIndex {
     InfoTimestamp,
@@ -102,16 +76,11 @@ pub enum JsonKeyIndex {
     FileModificationTime,
 }
 
-// Constants for file system event types (from the #define FS_* in dirt.h)
-// These are the values that will be stored in the `event` array elements if that event occurred.
-// Or, more likely, the eBPF code will use these as bitflags or counters.
-// The C code uses `rf->event[fsevt[cntf].index])` which implies the `event` array stores counts for each event type.
 pub const FS_CREATE: u32 = 0x00000100;
 pub const FS_MODIFY: u32 = 0x00000002;
 pub const FS_MOVED_FROM: u32 = 0x00000040;
 pub const FS_MOVED_TO: u32 = 0x00000080;
 pub const FS_DELETE: u32 = 0x00000200;
-// Add other FS_* constants as needed for the eBPF logic.
 
 // inode mode values (S_IFMT, S_IFLNK, etc.)
 pub const S_IFMT: u32 = 0o0170000;
@@ -119,7 +88,6 @@ pub const S_IFLNK: u32 = 0o0120000;
 pub const S_IFREG: u32 = 0o0100000;
 pub const S_IFDIR: u32 = 0o0040000;
 
-// Helper function to check file type
 pub fn is_lnk(mode: u32) -> bool {
     (mode & S_IFMT) == S_IFLNK
 }
