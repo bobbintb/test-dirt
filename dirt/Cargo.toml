@@ -18,7 +18,7 @@ authors = ["Your Name <you@example.com>"] # Placeholder, should be updated
 # Shared dependencies for all workspace members
 [workspace.dependencies]
 anyhow = "1.0"
- aya = { version = "0.12.0", features = ["async_tokio"] } # Remains 0.12.0 for now
+ aya = { version = "0.13.1", features = ["async_tokio"] }
  aya-log = { version = "0.2.1" }
  aya-ebpf = { version = "0.1.1" }
  aya-log-ebpf = { version = "0.1.1" }

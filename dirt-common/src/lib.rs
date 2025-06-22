@@ -15,7 +15,7 @@ pub const FILEPATH_LEN_MAX: usize = 96;
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]
 pub struct Record {
-    pub record_type: u32, // Changed from type to record_type for clarity
+    pub record_type: u32,
     pub ts: u64,
 }
 
@@ -24,7 +24,7 @@ pub struct Record {
 pub struct RecordFs {
     pub rc: Record,
     pub events: u32,
-    pub event: [u32; FS_EVENT_MAX], // Array to hold counts for each FsEventIndex
+    pub event: [u32; FS_EVENT_MAX],
     pub ino: u32,
     pub imode: u32,
     pub inlink: u32,
@@ -32,13 +32,13 @@ pub struct RecordFs {
     pub atime_nsec: u64,
     pub mtime_nsec: u64,
     pub ctime_nsec: u64,
-    pub isize_first: u64, // To calculate FileSizeChange
+    pub isize_first: u64,
     pub filepath: [u8; FILEPATH_LEN_MAX],
-    pub filename_union: [u8; FILENAME_LEN_MAX], // For filename or old_name>new_name
+    pub filename_union: [u8; FILENAME_LEN_MAX],
 }
 
 // This is the critical line that needs to use aya_ebpf::Pod
-unsafe impl aya_ebpf::Pod for RecordFs {}
+unsafe impl aya_ebpf::Pod for RecordFs {} // Corrected from aya_bpf::Pod
 
 #[repr(usize)]
 #[derive(Debug, Copy, Clone)]
@@ -58,30 +58,38 @@ pub enum FsEventIndex {
     MoveSelf,
     Unmount,
     QOverflow,
-    // Ensure this enum has FS_EVENT_MAX variants if used as direct index upper bound
 }
 
 // For JSON output structure, not strictly needed in common for #![no_std]
-// but kept for reference to the original C structure.
-// These are more for the user-space part when constructing JSON.
-// pub enum JsonKeyIndex { /* ... */ }
+#[derive(Debug, Copy, Clone)]
+pub enum JsonKeyIndex {
+    InfoTimestamp,
+    FilePath,
+    File,
+    FileMode,
+    FileEventCount,
+    FileEvents,
+    FileInode,
+    FileInodeLinkCount,
+    FileSize,
+    FileSizeChange,
+    FileAccessTime,
+    FileStatusChangeTime,
+    FileModificationTime,
+}
 
-// File system event type constants (bitflags or identifiers if used in event array)
-// These were in original C code, might be useful for eBPF logic if it sets specific bits/values
-pub const FS_CREATE_EVENT: u32 = 0x00000100; // Example, align with eBPF usage
+pub const FS_CREATE_EVENT: u32 = 0x00000100;
 pub const FS_MODIFY_EVENT: u32 = 0x00000002;
 pub const FS_MOVED_FROM_EVENT: u32 = 0x00000040;
 pub const FS_MOVED_TO_EVENT: u32 = 0x00000080;
 pub const FS_DELETE_EVENT: u32 = 0x00000200;
-pub const FS_ACCESS_EVENT: u32 = 0x00000001; // Example for FsEventIndex::Access
+pub const FS_ACCESS_EVENT: u32 = 0x00000001;
 
-// Inode mode constants (already present and correct)
 pub const S_IFMT: u32 = 0o0170000;
 pub const S_IFLNK: u32 = 0o0120000;
 pub const S_IFREG: u32 = 0o0100000;
 pub const S_IFDIR: u32 = 0o0040000;
 
-// Helper functions for checking file type (already present and correct)
 pub fn is_lnk(mode: u32) -> bool {
     (mode & S_IFMT) == S_IFLNK
 }
