@@ -6,7 +6,7 @@ use crate::constants::*;
 
 use core::{mem, ptr, slice};
 
-use aya_bpf::{
+use aya_ebpf::{
     macros::{map, kprobe, kretprobe},
     maps::{Array, PerCpuArray, LruHashMap, RingBuf},
     programs::{ProbeContext, RetProbeContext},
