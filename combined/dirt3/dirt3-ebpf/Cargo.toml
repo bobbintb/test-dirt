@@ -1,0 +1,17 @@
+[package]
+name = "dirt3-ebpf"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+dirt3-common = { path = "../dirt3-common" }
+
+aya-ebpf = { workspace = true }
+aya-log-ebpf = { workspace = true }
+
+[build-dependencies]
+which = { workspace = true }
+
+[[bin]]
+name = "dirt3"
+path = "src/main.rs"
