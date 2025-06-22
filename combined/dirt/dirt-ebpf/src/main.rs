@@ -3,14 +3,16 @@
 
 mod constants;
 use crate::constants::*;
+use dirt_common::*;
+use core::ffi::c_void;
 
-use core::{mem, ptr, slice};
+use core::{mem, ptr, slice, cmp};
 
 use aya_ebpf::{
-    macros::{map, kprobe, kretprobe},
+    macros::{map, kprobe, kretprobe, bpf_printk},
     maps::{Array, PerCpuArray, LruHashMap, RingBuf},
     programs::{ProbeContext, RetProbeContext},
-    bindings::*,
+    bindings::{dentry, inode, BPF_ANY, BPF_RB_RING_SIZE, TC_ACT_OK},
     helpers::{
         bpf_get_current_pid_tgid,
         bpf_get_stack,
@@ -18,327 +20,348 @@ use aya_ebpf::{
         bpf_map_lookup_elem,
         bpf_map_update_elem,
         bpf_map_delete_elem,
-        bpf_probe_read_kernel_str,
+        bpf_probe_read_kernel_str_bytes,
         bpf_ringbuf_output,
         bpf_ringbuf_query,
-        bpf_printk,
+        bpf_core_read,
     },
 };
 
-use aya_log_ebpf::info;
+// use aya_log_ebpf::info; // info! macro requires a program context.
 
-
-
-
+// Map definitions
 #[map(name = "ringbuf_records")]
-static mut RINGBUF_RECORDS: RingBuf<RecordFs> = RingBuf::<RecordFs>::with_max_entries(8192);
+static mut RINGBUF_RECORDS: RingBuf = RingBuf::new(); // Needs const initializer, but this is private.
+                                                      // The #[map] macro handles the actual map definition.
+                                                      // For static declaration, it just needs to be a type.
+                                                      // Let's try without `::new()` if loader handles it.
+// static mut RINGBUF_RECORDS: RingBuf; // This is what it should be if #[map] handles it fully.
 
 #[map(name = "hash_records")]
-static mut HASH_RECORDS: LruHashMap<u64, RecordFs> = LruHashMap::<u64, RecordFs>::with_max_entries(8192);
+static mut HASH_RECORDS: LruHashMap<u64, RecordFs> = LruHashMap::<u64, RecordFs>::with_max_entries(8192, 0);
 
 #[map(name = "heap_record_fs")]
-static mut HEAP_RECORD_FS: PerCpuArray<RecordFs> = PerCpuArray::<RecordFs>::with_max_entries(1);
+static mut HEAP_RECORD_FS: PerCpuArray<RecordFs> = PerCpuArray::<RecordFs>::with_max_entries(1, 0);
 
 #[map(name = "stats")]
-static mut STATS: Array<Stats> = Array::<Stats>::with_max_entries(1);
-
-
+static mut STATS: Array<Stats> = Array::<Stats>::with_max_entries(1, 0);
 
 #[inline(always)]
-fn handle_fs_event(ctx: *mut c_void, event: *const FsEventInfo) -> i32 {
+fn handle_fs_event(_ctx: *mut c_void, event_ptr: *const FsEventInfo) -> i32 {
     unsafe {
-        if (*event).index == I_ACCESS || (*event).index == I_ATTRIB {
-            return 0;
+        let event = match (*event_ptr).as_ref() { // Original code had this, FsEventInfo is Copy
+            Some(e) => e,
+            None => return TC_ACT_OK,
+        };
+
+        if event.index == INDEX_FS_EVENT::I_ACCESS as u32 || event.index == INDEX_FS_EVENT::I_ATTRIB as u32 {
+            return TC_ACT_OK;
         }
 
-        let pid = bpf_get_current_pid_tgid() >> 32;
-        if pid_self == pid {
-            return 0;
+        let pid_tgid = bpf_get_current_pid_tgid();
+        let pid = (pid_tgid >> 32) as u32;
+        if PID_SELF > 0 && PID_SELF == pid {
+            return TC_ACT_OK;
         }
 
-        let index = (*event).index;
-        let mut dentry = (*event).dentry;
-        let dentry_old = (*event).dentry_old;
-        let func = (*event).func;
+        let index = event.index;
+        let dentry_ptr = event.dentry as *const dentry;
+        let dentry_old_ptr = event.dentry_old as *const dentry;
 
-        let inode = bpf_core_read(
-            if !dentry_old.is_null() { dentry_old } else { dentry },
-            b"__d_inode\0",
-        ) as *const Inode;
+        let current_dentry_ptr = if !dentry_old_ptr.is_null() { dentry_old_ptr } else { dentry_ptr };
+        if current_dentry_ptr.is_null() { return TC_ACT_OK; }
 
-        let mut filename = [0u8; FILENAME_LEN_MAX];
-        bpf_probe_read_kernel_str(&mut filename, bpf_core_read(dentry, b"d_name.name\0") as *const u8);
+        let inode_ptr = bpf_core_read::<*const inode>(current_dentry_ptr as *const _, &b"d_inode\0"[0] as *const _).unwrap_or(ptr::null());
+        if inode_ptr.is_null() { return TC_ACT_OK; }
 
-        if inode.is_null() || filename[0] == 0 {
-            return 0;
+        let mut filename_buffer = [0u8; FILENAME_LEN_MAX];
+        let d_name_ptr = bpf_core_read::<*const u8>(dentry_ptr as *const _, &b"d_name.name\0"[0] as *const _).unwrap_or(ptr::null());
+        if d_name_ptr.is_null() { return TC_ACT_OK; }
+
+        match bpf_probe_read_kernel_str_bytes(d_name_ptr, &mut filename_buffer) {
+            Ok(len) if len > 0 => {},
+            _ => return TC_ACT_OK,
         }
 
-        let ino = bpf_core_read(inode, b"i_ino\0") as u32;
-        let imode = bpf_core_read(inode, b"i_mode\0") as u32;
-        if !(s_isreg(imode) || s_islnk(imode)) {
-            return 0;
+        let ino = bpf_core_read::<u32>(inode_ptr as *const _, &b"i_ino\0"[0] as *const _).unwrap_or(0);
+        let imode = bpf_core_read::<u32>(inode_ptr as *const _, &b"i_mode\0"[0] as *const _).unwrap_or(0);
+        if ino == 0 || imode == 0 { return TC_ACT_OK; }
+
+        if !(S_ISREG(imode) || S_ISLNK(imode)) {
+            return TC_ACT_OK;
         }
 
         let key = key_pid_ino(pid, ino);
-        let r = bpf_map_lookup_elem(&HASH_RECORDS, &key) as *mut RecordFs;
-        let s = bpf_map_lookup_elem(&STATS, &0u32) as *mut Stats;
+        let mut s_ptr_option = (bpf_map_lookup_elem(&STATS as *const _ as *mut _, &0u32 as *const _ as *const _) as *mut Stats).as_mut();
 
-        if !r.is_null() {
-            if fsevt[index as usize].value == FS_MOVED_TO {
-                core::ptr::write_bytes((*r).filename_to.as_mut_ptr(), 0, (*r).filename_to.len());
-                bpf_probe_read_kernel_str(&mut (*r).filename_to, bpf_core_read(dentry, b"d_name.name\0") as *const u8);
-            }
-            (*r).rc.ts = bpf_ktime_get_ns();
-        } else {
-            let r = bpf_map_lookup_elem(&HEAP_RECORD_FS, &0u32) as *mut RecordFs;
-            if r.is_null() {
-                return 0;
-            }
-
-            (*r).rc.ts = bpf_ktime_get_ns();
-            (*r).ino = ino;
-            core::ptr::write_bytes((*r).filename.as_mut_ptr(), 0, (*r).filename.len());
-            bpf_probe_read_kernel_str(&mut (*r).filename, bpf_core_read(dentry, b"d_name.name\0") as *const u8);
-            (*r).isize_first = bpf_core_read(inode, b"i_size\0") as u64;
-
-            let mut pathnode: [*const u8; FILEPATH_NODE_MAX] = core::mem::zeroed();
-            let mut cnt = 0;
-            while cnt < FILEPATH_NODE_MAX {
-                let dname = bpf_core_read(dentry, b"d_name.name\0") as *const u8;
-                let dparent = bpf_core_read(dentry, b"d_parent\0") as *const Dentry;
-                pathnode[cnt] = dname;
-                if bpf_core_read(dentry, b"d_inode.i_ino\0") == bpf_core_read(dparent, b"d_inode.i_ino\0") {
-                    break;
+        let r_mut_ptr: &mut RecordFs = match (bpf_map_lookup_elem(&HASH_RECORDS as *const _ as *mut _, &key as *const _ as *const _) as *mut RecordFs).as_mut() {
+            Some(r_existing) => {
+                if FSEVT[index as usize].value == FS_MOVED_TO as i16 {
+                    core::ptr::write_bytes(r_existing.filename_to.as_mut_ptr(), 0, r_existing.filename_to.len());
+                    let d_name_ptr_move = bpf_core_read::<*const u8>(dentry_ptr as *const _, &b"d_name.name\0"[0] as *const _).unwrap_or(ptr::null());
+                    bpf_probe_read_kernel_str_bytes(d_name_ptr_move, &mut r_existing.filename_to).unwrap_or(0);
                 }
-                dentry = dparent;
-                cnt += 1;
+                r_existing.rc.ts = bpf_ktime_get_ns();
+                r_existing
             }
+            None => {
+                let r_heap = match (bpf_map_lookup_elem(&HEAP_RECORD_FS as *const _ as *mut _, &0u32 as *const _ as *const _) as *mut RecordFs).as_mut() {
+                    Some(rh) => rh,
+                    None => return TC_ACT_OK,
+                };
 
-            let num_nodes = if cnt < FILEPATH_NODE_MAX { cnt } else { 0 };
-            core::ptr::write_bytes((*r).filepath.as_mut_ptr(), 0, (*r).filepath.len());
+                r_heap.rc.ts = bpf_ktime_get_ns();
+                r_heap.rc.pid = pid;
+                r_heap.ino = ino;
+                core::ptr::write_bytes(r_heap.filename.as_mut_ptr(), 0, r_heap.filename.len());
+                let len_to_copy = filename_buffer.iter().position(|&x| x == 0).unwrap_or(FILENAME_LEN_MAX);
+                r_heap.filename[..len_to_copy].copy_from_slice(&filename_buffer[..len_to_copy]);
 
-            let mut offset = 0;
-            for cnt in (1..=num_nodes).rev() {
-                let node = pathnode[cnt];
-                if !node.is_null() && offset < ((*r).filepath.len() - DNAME_INLINE_LEN) {
-                    let len = bpf_probe_read_kernel_str(
-                        &mut (*r).filepath[offset..],
-                        node,
-                    );
-                    if len > 0 && offset < ((*r).filepath.len() - len) {
-                        offset += len - 1;
-                        if cnt != num_nodes && offset < (*r).filepath.len() {
-                            (*r).filepath[offset] = b'/';
-                            offset += 1;
-                        }
+                r_heap.isize_first = bpf_core_read::<u64>(inode_ptr as *const _, &b"i_size\0"[0] as *const _).unwrap_or(0);
+
+                let mut current_path_dentry = dentry_ptr;
+                let mut path_offset = FILEPATH_LEN_MAX;
+                core::ptr::write_bytes(r_heap.filepath.as_mut_ptr(), 0, FILEPATH_LEN_MAX);
+
+                for _idx_path in 0..FILEPATH_NODE_MAX {
+                    if current_path_dentry.is_null() { break; }
+                    let name_ptr = bpf_core_read::<*const u8>(current_path_dentry as *const _, &b"d_name.name\0"[0] as *const _).unwrap_or(ptr::null());
+                    if name_ptr.is_null() { break; }
+
+                    let mut component_buf = [0u8; DNAME_INLINE_LEN];
+                    let len_res = bpf_probe_read_kernel_str_bytes(name_ptr, &mut component_buf);
+
+                    if let Ok(len_val) = len_res {
+                        if len_val == 0 { break; }
+                        let actual_len = cmp::min(len_val, DNAME_INLINE_LEN);
+                        if path_offset < actual_len { break; }
+
+                        path_offset -= actual_len;
+                        r_heap.filepath[path_offset..path_offset + actual_len].copy_from_slice(&component_buf[..actual_len]);
+
+                        let parent_dentry = bpf_core_read::<*const dentry>(current_path_dentry as *const _, &b"d_parent\0"[0] as *const _).unwrap_or(ptr::null());
+                        if parent_dentry == current_path_dentry || parent_dentry.is_null() { break; }
+
+                        if path_offset > 0 {
+                           path_offset -= 1;
+                           r_heap.filepath[path_offset] = b'/';
+                        } else { break; }
+                        current_path_dentry = parent_dentry;
+                    } else { break; }
+                }
+
+                if path_offset < FILEPATH_LEN_MAX {
+                    let final_path_len = FILEPATH_LEN_MAX - path_offset;
+                    r_heap.filepath.copy_within(path_offset.., 0);
+                    if final_path_len < FILEPATH_LEN_MAX {
+                        r_heap.filepath[final_path_len] = 0;
                     }
+                } else {
+                    r_heap.filepath[0] = 0;
                 }
-            }
 
-            (*r).events = 0;
-            for e in (*r).event.iter_mut() {
-                *e = 0;
-            }
-            (*r).inlink = 0;
+                r_heap.events = 0;
+                for e_val in r_heap.event.iter_mut() { *e_val = 0; }
+                r_heap.inlink = 0;
 
-            if !s.is_null() {
-                (*s).fs_records += 1;
+                if let Some(s) = s_ptr_option.as_mut() { s.fs_records = s.fs_records.saturating_add(1); }
+                r_heap
             }
+        };
+
+        if let Some(s) = s_ptr_option.as_mut() { s.fs_events = s.fs_events.saturating_add(1); }
+
+        r_mut_ptr.imode = imode;
+        r_mut_ptr.isize = bpf_core_read::<u64>(inode_ptr as *const _, &b"i_size\0"[0] as *const _).unwrap_or(0);
+        r_mut_ptr.inlink = bpf_core_read::<u32>(inode_ptr as *const _, &b"i_nlink\0"[0] as *const _).unwrap_or(0);
+
+        if index == INDEX_FS_EVENT::I_CREATE as u32 && !dentry_old_ptr.is_null() {
+            r_mut_ptr.inlink = r_mut_ptr.inlink.saturating_add(1);
         }
 
-        if !s.is_null() {
-            (*s).fs_events += 1;
+        let i_atime_sec = bpf_core_read::<i64>(inode_ptr as *const _, &b"i_atime.tv_sec\0"[0] as *const _).unwrap_or(0);
+        let i_atime_nsec_val = bpf_core_read::<i64>(inode_ptr as *const _, &b"i_atime.tv_nsec\0"[0] as *const _).unwrap_or(0);
+        r_mut_ptr.atime_nsec = (i_atime_sec as u64).wrapping_mul(1_000_000_000).wrapping_add(i_atime_nsec_val as u64);
+
+        let i_mtime_sec = bpf_core_read::<i64>(inode_ptr as *const _, &b"i_mtime.tv_sec\0"[0] as *const _).unwrap_or(0);
+        let i_mtime_nsec_val = bpf_core_read::<i64>(inode_ptr as *const _, &b"i_mtime.tv_nsec\0"[0] as *const _).unwrap_or(0);
+        r_mut_ptr.mtime_nsec = (i_mtime_sec as u64).wrapping_mul(1_000_000_000).wrapping_add(i_mtime_nsec_val as u64);
+
+        let i_ctime_sec = bpf_core_read::<i64>(inode_ptr as *const _, &b"i_ctime.tv_sec\0"[0] as *const _).unwrap_or(0);
+        let i_ctime_nsec_val = bpf_core_read::<i64>(inode_ptr as *const _, &b"i_ctime.tv_nsec\0"[0] as *const _).unwrap_or(0);
+        r_mut_ptr.ctime_nsec = (i_ctime_sec as u64).wrapping_mul(1_000_000_000).wrapping_add(i_ctime_nsec_val as u64);
+
+        r_mut_ptr.events = r_mut_ptr.events.saturating_add(1);
+        if (index as usize) < r_mut_ptr.event.len() {
+             r_mut_ptr.event[index as usize] = r_mut_ptr.event[index as usize].saturating_add(1);
         }
 
-        (*r).imode = imode;
-        (*r).isize = bpf_core_read(inode, b"i_size\0") as u64;
-        (*r).inlink = bpf_core_read(inode, b"i_nlink\0") as u32;
-        if index == I_CREATE && !dentry_old.is_null() {
-            (*r).inlink += 1;
-        }
-        (*r).atime_nsec = (bpf_core_read(inode, b"i_atime_sec\0") as u64) * 1_000_000_000
-            + (bpf_core_read(inode, b"i_atime_nsec\0") as u64);
-        (*r).mtime_nsec = (bpf_core_read(inode, b"i_mtime_sec\0") as u64) * 1_000_000_000
-            + (bpf_core_read(inode, b"i_mtime_nsec\0") as u64);
-        (*r).ctime_nsec = (bpf_core_read(inode, b"i_ctime_sec\0") as u64) * 1_000_000_000
-            + (bpf_core_read(inode, b"i_ctime_nsec\0") as u64);
-
-        (*r).events += 1;
-        (*r).event[index as usize] += 1;
-
-        if bpf_map_update_elem(&HASH_RECORDS, &key, r as *const _, BPF_ANY) < 0 {
-            return 0;
+        if bpf_map_update_elem(&HASH_RECORDS as *const _ as *mut _, &key as *const _ as *const _, r_mut_ptr as *const RecordFs as *const _, BPF_ANY as u64) < 0 {
+            return TC_ACT_OK;
         }
 
         let mut agg_end = false;
-        if index == I_CLOSE_WRITE || index == I_CLOSE_NOWRITE || index == I_DELETE || index == I_MOVED_TO
-            || (index == I_CREATE && (s_islnk(imode) || (*r).inlink > 1)) {
+        if index == INDEX_FS_EVENT::I_CLOSE_WRITE as u32 || index == INDEX_FS_EVENT::I_CLOSE_NOWRITE as u32 || index == INDEX_FS_EVENT::I_DELETE as u32 || index == INDEX_FS_EVENT::I_MOVED_TO as u32
+            || (index == INDEX_FS_EVENT::I_CREATE as u32 && (S_ISLNK(imode) || r_mut_ptr.inlink > 1)) {
             agg_end = true;
         }
 
-        if !agg_end && agg_events_max != 0 && (*r).events >= agg_events_max {
+        if !agg_end && AGG_EVENTS_MAX != 0 && r_mut_ptr.events >= AGG_EVENTS_MAX {
             agg_end = true;
         }
 
         if agg_end {
-            (*r).rc.type_ = RECORD_TYPE_FILE;
-            let output_len = core::mem::size_of_val(&*r) as u32;
-            if bpf_ringbuf_output(&RINGBUF_RECORDS, r as *const _, output_len, 0) != 0 {
-                if !s.is_null() {
-                    (*s).fs_records_dropped += 1;
+            r_mut_ptr.rc.type_ = RECORD_TYPE_FILE;
+            let output_len = core::mem::size_of_val(&*r_mut_ptr) as u32;
+            if bpf_ringbuf_output(&RINGBUF_RECORDS as *const _ as *mut _, r_mut_ptr as *const RecordFs as *const _, output_len as u64, 0) != 0 {
+                if let Some(s) = s_ptr_option.as_mut() {
+                    s.fs_records_dropped = s.fs_records_dropped.saturating_add(1);
                 }
             }
-            if bpf_map_delete_elem(&HASH_RECORDS, &key) != 0 {
-                return 0;
-            }
-            if !s.is_null() {
-                (*s).fs_records_deleted += 1;
+            let _ = bpf_map_delete_elem(&HASH_RECORDS as *const _ as *mut _, &key as *const _ as *const _);
+            if let Some(s) = s_ptr_option.as_mut() {
+                s.fs_records_deleted = s.fs_records_deleted.saturating_add(1);
             }
         }
 
-        if let Some(s) = bpf_map_lookup_elem(&STATS, &0u32) {
-            let mut rsz = core::mem::size_of_val(&*r) as u64;
-            rsz += 8 - (rsz % 8);
-            if (*s).fs_records == 1 {
-                (*s).fs_records_rb_max = bpf_ringbuf_query(&RINGBUF_RECORDS, BPF_RB_RING_SIZE) / rsz;
+        if let Some(s_val) = s_ptr_option {
+            let mut rsz = core::mem::size_of_val(&*r_mut_ptr) as u64;
+            rsz = rsz.wrapping_add(7) & !7u64;
+            if s_val.fs_records == 1 {
+                let ringbuf_size = bpf_ringbuf_query(&RINGBUF_RECORDS as *const _ as *mut _, BPF_RB_RING_SIZE as u64);
+                if rsz > 0 {
+                    s_val.fs_records_rb_max = ringbuf_size / rsz;
+                } else {
+                    s_val.fs_records_rb_max = 0;
+                }
             }
         }
-
-        0
+        TC_ACT_OK
     }
 }
 
-
-
-
-
 #[kretprobe]
 pub fn do_filp_open(ctx: RetProbeContext) -> u32 {
-    try_dirt1(ctx).unwrap_or(0)
+    // Placeholder: Actual FsEventInfo construction is complex.
+    // info!( & RetProbeContext::from(ctx), "kretprobe do_filp_open called, ret: {}", ctx.ret());
+    TC_ACT_OK as u32
 }
 
 #[kprobe]
 pub fn security_inode_link(ctx: ProbeContext) -> u32 {
-    try_dirt(ctx).unwrap_or(0)
+    // info!(&ctx, "kprobe security_inode_link called");
+    TC_ACT_OK as u32
 }
 
 #[kprobe]
 pub fn security_inode_symlink(ctx: ProbeContext) -> u32 {
-    try_dirt(ctx).unwrap_or(0)
+    // info!(&ctx, "kprobe security_inode_symlink called");
+    TC_ACT_OK as u32
 }
 
 #[kprobe]
 pub fn dput(ctx: ProbeContext) -> u32 {
-    try_dirt(ctx).unwrap_or(0)
+    // info!(&ctx, "kprobe dput called");
+    TC_ACT_OK as u32
 }
 
 #[kprobe]
 pub fn notify_change(ctx: ProbeContext) -> u32 {
-    try_dirt(ctx).unwrap_or(0)
+    // info!(&ctx, "kprobe notify_change called");
+    TC_ACT_OK as u32
 }
 
 #[kprobe]
 pub fn __fsnotify_parent(ctx: ProbeContext) -> u32 {
-    try_dirt(ctx).unwrap_or(0)
+    // info!(&ctx, "kprobe __fsnotify_parent called");
+    TC_ACT_OK as u32
 }
 
 #[kprobe]
 pub fn security_inode_rename(ctx: ProbeContext) -> u32 {
-    try_dirt(ctx).unwrap_or(0)
+    // info!(&ctx, "kprobe security_inode_rename called");
+    TC_ACT_OK as u32
 }
 
 #[kprobe]
 pub fn security_inode_unlink(ctx: ProbeContext) -> u32 {
-    try_dirt(ctx).unwrap_or(0)
+    // info!(&ctx, "kprobe security_inode_unlink called");
+    TC_ACT_OK as u32
 }
-
-fn try_dirt(ctx: ProbeContext) -> Result<u32, u32> {
-    info!(&ctx, "kprobe called");
-    Ok(0)
-}
-
-fn try_dirt1(ctx: RetProbeContext) -> Result<u32, u32> {
-    info!(&ctx, "kretprobe called");
-    Ok(0)
-}
-
-
 
 static mut DEBUG_STACK: [i64; MAX_STACK_TRACE_DEPTH] = [0; MAX_STACK_TRACE_DEPTH];
 
 #[inline(always)]
-fn debug_dump_stack(ctx: *mut core::ffi::c_void, func: *const u8) {
+fn debug_dump_stack(ctx: *mut core::ffi::c_void, func_name_ptr: *const u8) {
     unsafe {
         let kstacklen = bpf_get_stack(
             ctx,
             DEBUG_STACK.as_mut_ptr() as *mut _,
-            MAX_STACK_TRACE_DEPTH * core::mem::size_of::<i64>(),
+            (MAX_STACK_TRACE_DEPTH * core::mem::size_of::<i64>()) as u32,
             0,
         );
 
         if kstacklen > 0 {
-            bpf_printk(
-                b"KERNEL STACK (%u): %s\0".as_ptr(),
-                (kstacklen / core::mem::size_of::<i64>()) as u32,
-                func,
+            bpf_printk!(
+                b"KERNEL STACK (%u): %s\0".as_ptr() as *const i8,
+                (kstacklen as u32 / (core::mem::size_of::<i64>() as u32)),
+                func_name_ptr as *const i8
             );
 
-            for cnt in 0..MAX_STACK_TRACE_DEPTH {
-                if kstacklen > (cnt * core::mem::size_of::<i64>()) as i64 {
-                    bpf_printk(b"  %pB\0".as_ptr(), DEBUG_STACK[cnt as usize] as *const _);
-                }
+            let num_frames = kstacklen / (core::mem::size_of::<i64>() as i64);
+            for cnt in 0..cmp::min(num_frames as usize, MAX_STACK_TRACE_DEPTH) {
+                 bpf_printk!(b"  %pB\0".as_ptr() as *const i8, DEBUG_STACK[cnt] as *const c_void);
             }
         }
     }
 }
 
 fn debug_file_is_tp(filename: *const u8) -> bool {
-    let tp = b"trace_pipe";
+    let tp = b"trace_pipe\0";
     unsafe {
-        if !filename.is_null() {
-            for cnt in 0..DBG_LEN_MAX {
-                let fc = *filename.add(cnt);
-                let tc = *tp.get(cnt).unwrap_or(&0);
-                if fc != tc {
-                    break;
-                } else if cnt == tp.len() - 1 {
-                    return true;
-                }
-            }
+        if filename.is_null() { return false; }
+        for i in 0..tp.len() {
+            let fc = *filename.add(i);
+            let tc = tp[i];
+            if fc != tc { return false; }
+            if tc == 0 { return true; }
         }
+        return *filename.add(tp.len() -1) == 0;
     }
-    false
 }
 
 fn debug_proc(comm: *const u8, filename: *const u8) -> bool {
     unsafe {
         if comm.is_null() {
-            return debug[0] == b'q' && debug[1] == 0;
+            return DEBUG_FILTER_COMM[0] == b'q' && DEBUG_FILTER_COMM[1] == 0;
         }
 
-        if debug[0] != b'*' {
+        if DEBUG_FILTER_COMM[0] != b'*' {
+            let mut match_filter = true;
             for cnt in 0..DBG_LEN_MAX {
-                if *comm.add(0) == 0 || *comm.add(cnt) != debug[cnt] {
-                    return false;
+                let filter_char = DEBUG_FILTER_COMM[cnt];
+                let comm_char = *comm.add(cnt);
+
+                if filter_char == 0 { break; }
+                if comm_char == 0 || comm_char != filter_char {
+                    match_filter = false;
+                    break;
                 }
             }
+            if !match_filter { return false; }
         }
 
         if debug_file_is_tp(filename) {
             return false;
         }
-
         true
     }
 }
 
-
-
-
 #[cfg(not(test))]
 #[panic_handler]
 fn panic(_info: &core::panic::PanicInfo) -> ! {
-    loop {}
+    unsafe { core::hint::unreachable_unchecked() }
 }
 
 #[link_section = "license"]
