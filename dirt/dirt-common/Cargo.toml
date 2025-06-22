@@ -9,8 +9,8 @@ authors.workspace = true
 publish = false # This crate-specific setting is preserved
 
 [dependencies]
-# Inherit from workspace, but specify needed features locally if not default in workspace
-aya-bpf = { workspace = true, features = ["async_tokio"] }
+# Inherit from workspace. Features like 'btf' are on the workspace definition of aya-ebpf.
+aya-ebpf = { workspace = true }
 
 [features]
 default = []
