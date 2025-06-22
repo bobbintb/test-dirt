@@ -1,10 +1,10 @@
 [package]
-name = "dirt2-ebpf"
+name = "dirt_merged-ebpf"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-dirt2-common = { path = "../dirt2-common" }
+dirt_merged-common = { path = "../dirt_merged-common" }
 
 aya-ebpf = { workspace = true }
 aya-log-ebpf = { workspace = true }
@@ -13,5 +13,5 @@ aya-log-ebpf = { workspace = true }
 which = { workspace = true }
 
 [[bin]]
-name = "dirt2"
+name = "dirt_merged"
 path = "src/main.rs"

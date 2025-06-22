@@ -24,13 +24,13 @@ async fn main() -> anyhow::Result<()> {
     // reach for `Bpf::load_file` instead.
     let mut ebpf = aya::Ebpf::load(aya::include_bytes_aligned!(concat!(
         env!("OUT_DIR"),
-        "/dirt1"
+        "/dirt_merged"
     )))?;
     if let Err(e) = aya_log::EbpfLogger::init(&mut ebpf) {
         // This can happen if you remove all log statements from your eBPF program.
         warn!("failed to initialize eBPF logger: {e}");
     }
-    let program: &mut KProbe = ebpf.program_mut("dirt1").unwrap().try_into()?;
+    let program: &mut KProbe = ebpf.program_mut("dirt_merged").unwrap().try_into()?;
     program.load()?;
     program.attach("do_filp_open", 0)?;
 

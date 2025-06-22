@@ -5,14 +5,14 @@ use aya_ebpf::{macros::kretprobe, programs::RetProbeContext};
 use aya_log_ebpf::info;
 
 #[kretprobe]
-pub fn dirt1(ctx: RetProbeContext) -> u32 {
-    match try_dirt1(ctx) {
+pub fn dirt_merged(ctx: RetProbeContext) -> u32 {
+    match try_dirt_merged(ctx) {
         Ok(ret) => ret,
         Err(ret) => ret,
     }
 }
 
-fn try_dirt1(ctx: RetProbeContext) -> Result<u32, u32> {
+fn try_dirt_merged(ctx: RetProbeContext) -> Result<u32, u32> {
     info!(&ctx, "kretprobe called");
     Ok(0)
 }

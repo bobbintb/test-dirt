@@ -1,5 +1,5 @@
 [package]
-name = "dirt2-common"
+name = "dirt_merged-common"
 version = "0.1.0"
 edition = "2021"
 

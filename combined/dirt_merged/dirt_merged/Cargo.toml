@@ -1,12 +1,12 @@
 [package]
-name = "dirt1"
+name = "dirt_merged"
 version = "0.1.0"
 edition = "2021"
 
 license.workspace = true
 
 [dependencies]
-dirt1-common = { path = "../dirt1-common", features = ["user"] }
+dirt_merged-common = { path = "../dirt_merged-common", features = ["user"] }
 
 anyhow = { workspace = true, default-features = true }
 aya = { workspace = true }
@@ -36,8 +36,8 @@ aya-build = { workspace = true }
 # Finally note that *any* usage of `artifact = ...` in *any* Cargo.toml in the workspace breaks
 # workflows with stable cargo; stable cargo outright refuses to load manifests that use unstable
 # features.
-dirt1-ebpf = { path = "../dirt1-ebpf" }
+dirt_merged-ebpf = { path = "../dirt_merged-ebpf" }
 
 [[bin]]
-name = "dirt1"
+name = "dirt_merged"
 path = "src/main.rs"

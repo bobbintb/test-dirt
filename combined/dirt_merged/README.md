@@ -1,4 +1,4 @@
-# dirt2
+# dirt_merged
 
 ## Prerequisites
 
@@ -25,16 +25,16 @@ program.
 Cross compilation should work on both Intel and Apple Silicon Macs.
 
 ```shell
-CC=${ARCH}-linux-musl-gcc cargo build --package dirt2 --release \
+CC=${ARCH}-linux-musl-gcc cargo build --package dirt_merged --release \
   --target=${ARCH}-unknown-linux-musl \
   --config=target.${ARCH}-unknown-linux-musl.linker=\"${ARCH}-linux-musl-gcc\"
 ```
-The cross-compiled program `target/${ARCH}-unknown-linux-musl/release/dirt2` can be
+The cross-compiled program `target/${ARCH}-unknown-linux-musl/release/dirt_merged` can be
 copied to a Linux server or VM and run there.
 
 ## License
 
-With the exception of eBPF code, dirt2 is distributed under the terms
+With the exception of eBPF code, dirt_merged is distributed under the terms
 of either the [MIT license] or the [Apache License] (version 2.0), at your
 option.
 
