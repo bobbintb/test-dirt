@@ -16,33 +16,50 @@ authors = ["Your Name <you@example.com>"] # Placeholder, should be updated
 # description = "..." # Optional: Add description
 
 # Shared dependencies for all workspace members
-# Versions are defined here, members use `some_dep.workspace = true`
 [workspace.dependencies]
 anyhow = "1.0"
-aya = { git = "https://github.com/aya-rs/aya", features = ["async_tokio"] }
-aya-log = { git = "https://github.com/aya-rs/aya" }
-aya-ebpf = { git = "https://github.com/aya-rs/aya", features = ["btf"] }
-aya-log-ebpf = { git = "https://github.com/aya-rs/aya" }
-aya-bpf = { git = "https://github.com/aya-rs/aya" } # For dirt-common, assuming same git source for consistency
-aya-build = "0.2" # Or specific version / git
+ aya = { git = "https://github.com/aya-rs/aya", package = "aya", features = ["async_tokio"] }
+ aya-log = { git = "https://github.com/aya-rs/aya", package = "aya-log" }
+ aya-ebpf = { git = "https://github.com/aya-rs/aya", package = "aya-ebpf", features = ["btf"] }
+ aya-log-ebpf = { git = "https://github.com/aya-rs/aya", package = "aya-log-ebpf" }
+ aya-bpf = { git = "https://github.com/aya-rs/aya", package = "aya-bpf" } # async_tokio feature will be specified in dirt-common's manifest
+ aya-build = "0.2" # This was already present and seems fine as is (not from aya.git)
 
 clap = { version = "4.0", features = ["derive"] }
 chrono = { version = "0.4", features = ["serde"] }
 daemonize = "0.5"
-env_logger = "0.10" # Using 0.10 as per user-space Cargo.toml
+env_logger = "0.10"
 libc = "0.2"
 log = "0.4"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 tokio = { version = "1", features = [
     "macros",
-    "rt", # rt implies rt-multi-thread in tokio 1.x
+    "rt",
     "rt-multi-thread",
     "net",
     "signal",
 ] }
 
-# Note: The original build-dependency on dirt-ebpf from the user-space app
-# (dirt-ebpf = { path = "../dirt-ebpf" }) is a direct path dependency
-# and typically wouldn't be managed under [workspace.dependencies] unless it was published
-# or also a git dependency. It will be handled in the user-space app's Cargo.toml.
+# Profiles moved from dirt-ebpf/Cargo.toml
+[profile.dev]
+opt-level = 3
+debug = false
+debug-assertions = false
+overflow-checks = false
+lto = true
+panic = "abort"
+incremental = false
+codegen-units = 1
+rpath = false
+
+[profile.release]
+opt-level = 3
+debug = false
+debug-assertions = false
+overflow-checks = false
+lto = true
+panic = "abort"
+incremental = false
+codegen-units = 1
+rpath = false

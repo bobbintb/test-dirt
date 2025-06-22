@@ -20,31 +20,5 @@ dirt-common = { path = "../dirt-common" }
 name = "dirt" # The eBPF binary output name, matches previous
 path = "src/main.rs"
 
-# Profiles are usually defined in the workspace root for consistency,
-# but can be overridden or defined per-crate if needed.
-# For now, keeping them as they were in the previous read if not defined in workspace root.
-# If workspace root defines [profile.*], these might not be needed here.
-# The subtask for workspace root did not add [profile.*] sections, so we keep them here.
-[profile.dev]
-opt-level = 3
-debug = false
-debug-assertions = false
-overflow-checks = false
-lto = true
-panic = "abort"
-incremental = false
-codegen-units = 1
-rpath = false
-
-[profile.release]
-opt-level = 3
-debug = false
-debug-assertions = false
-overflow-checks = false
-lto = true
-panic = "abort"
-incremental = false
-codegen-units = 1
-rpath = false
-
 # No [workspace] section here; this is a member crate.
+# Profiles have been moved to the workspace root.
