@@ -10,14 +10,14 @@ publish = false # This crate-specific setting is preserved
 
 [dependencies]
 # Inherit from workspace
-aya-ebpf = { workspace = true } # btf feature is specific here
+aya-ebpf = { workspace = true, features = ["btf"] } # Ensure btf feature is enabled
 aya-log-ebpf.workspace = true
 
 # Path dependency to local common library
 dirt-common = { path = "../dirt-common" }
 
 [[bin]]
-name = "dirt-ebpf-probe" # New unique name for the eBPF binary
+name = "dirt-ebpf-probe" # This is already correct
 path = "src/main.rs"
 
 # No [workspace] section here; this is a member crate.
