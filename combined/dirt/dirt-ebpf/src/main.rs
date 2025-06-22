@@ -1,8 +1,7 @@
 #![no_std]
 #![no_main]
 
-mod constants;
-use crate::constants::*;
+use dirt-common::*;
 
 use core::{mem, ptr, slice};
 
