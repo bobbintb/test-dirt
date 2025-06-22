@@ -12,5 +12,9 @@ publish = false # This crate-specific setting is preserved
 # Inherit from workspace, but specify needed features locally if not default in workspace
 aya-bpf = { workspace = true, features = ["async_tokio"] }
 
+[features]
+default = []
+user = [] # Defines the 'user' feature
+
 [lib]
 path = "src/lib.rs" # Standard library path definition
