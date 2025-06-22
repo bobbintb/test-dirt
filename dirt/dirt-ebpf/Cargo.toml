@@ -17,7 +17,7 @@ aya-log-ebpf.workspace = true
 dirt-common = { path = "../dirt-common" }
 
 [[bin]]
-name = "dirt" # The eBPF binary output name, matches previous
+name = "dirt-ebpf-probe" # New unique name for the eBPF binary
 path = "src/main.rs"
 
 # No [workspace] section here; this is a member crate.

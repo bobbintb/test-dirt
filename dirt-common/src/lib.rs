@@ -37,7 +37,7 @@ pub struct RecordFs {
     pub filename_union: [u8; FILENAME_LEN_MAX],
 }
 
-unsafe impl aya_bpf::Pod for RecordFs {}
+unsafe impl aya_ebpf::Pod for RecordFs {}
 
 #[repr(usize)]
 #[derive(Debug, Copy, Clone)]
