@@ -10,7 +10,7 @@ publish = false # This crate-specific setting is preserved
 
 [dependencies]
 # Inherit from workspace
-aya-ebpf = { workspace = true, features = ["btf"] } # btf feature is specific here
+aya-ebpf = { workspace = true } # btf feature is specific here
 aya-log-ebpf.workspace = true
 
 # Path dependency to local common library
