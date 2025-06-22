@@ -18,12 +18,12 @@ authors = ["Your Name <you@example.com>"] # Placeholder, should be updated
 # Shared dependencies for all workspace members
 [workspace.dependencies]
 anyhow = "1.0"
- aya = { version = "0.12.0", features = ["async_tokio"] }
+ aya = { version = "0.12.0", features = ["async_tokio"] } # Remains 0.12.0 for now
  aya-log = { version = "0.2.1" }
- aya-ebpf = { version = "0.12.0", features = ["btf"] }
- aya-log-ebpf = { version = "0.1.1" } # Corrected version
- aya-bpf = { version = "0.12.0" } # async_tokio feature will be specified in dirt-common's manifest
- aya-build = "0.1.2" # Corrected version
+ aya-ebpf = { version = "0.1.1", features = ["btf"] } # Corrected version
+ aya-log-ebpf = { version = "0.1.1" }
+ aya-bpf = { version = "0.1.1" } # Corrected version (tentative)
+ aya-build = "0.1.2"
 
 clap = { version = "4.0", features = ["derive"] }
 chrono = { version = "0.4", features = ["serde"] }
