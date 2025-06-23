@@ -1,107 +1,107 @@
 #![allow(non_camel_case_types)]
 #![allow(dead_code)]
 
-pub const KERNEL_VERSION_MIN: u32 = 5;
-pub const KERNEL_MAJOR_MIN: u32 = 10;
+const KERNEL_VERSION_MIN: u32 = 5;
+const KERNEL_MAJOR_MIN: u32 = 10;
 
-pub const MONITOR_NONE: u32 = 1;
-pub const MONITOR_FILE: u32 = 2;
+const MONITOR_NONE: u32 = 1;
+const MONITOR_FILE: u32 = 2;
 
-pub const FS_ACCESS: u32         = 0x00000001;
-pub const FS_MODIFY: u32         = 0x00000002;
-pub const FS_ATTRIB: u32         = 0x00000004;
-pub const FS_CLOSE_WRITE: u32    = 0x00000008;
-pub const FS_CLOSE_NOWRITE: u32  = 0x00000010;
-pub const FS_OPEN: u32           = 0x00000020;
-pub const FS_MOVED_FROM: u32     = 0x00000040;
-pub const FS_MOVED_TO: u32       = 0x00000080;
-pub const FS_CREATE: u32         = 0x00000100;
-pub const FS_DELETE: u32         = 0x00000200;
-pub const FS_DELETE_SELF: u32    = 0x00000400;
-pub const FS_MOVE_SELF: u32      = 0x00000800;
-pub const FS_OPEN_EXEC: u32      = 0x00001000;
-pub const FS_UNMOUNT: u32        = 0x00002000;
-pub const FS_Q_OVERFLOW: u32     = 0x00004000;
-pub const FS_ERROR: u32          = 0x00008000;
-pub const FS_IN_IGNORED: u32     = 0x00008000;
-pub const FS_OPEN_PERM: u32      = 0x00010000;
-pub const FS_ACCESS_PERM: u32    = 0x00020000;
-pub const FS_OPEN_EXEC_PERM: u32 = 0x00040000;
-pub const FS_EXCL_UNLINK: u32    = 0x04000000;
-pub const FS_EVENT_ON_CHILD: u32 = 0x08000000;
-pub const FS_RENAME: u32         = 0x10000000;
-pub const FS_DN_MULTISHOT: u32   = 0x20000000;
-pub const FS_ISDIR: u32          = 0x40000000;
-pub const FS_IN_ONESHOT: u32     = 0x80000000;
+const FS_ACCESS: u32         = 0x00000001;
+const FS_MODIFY: u32         = 0x00000002;
+const FS_ATTRIB: u32         = 0x00000004;
+const FS_CLOSE_WRITE: u32    = 0x00000008;
+const FS_CLOSE_NOWRITE: u32  = 0x00000010;
+const FS_OPEN: u32           = 0x00000020;
+const FS_MOVED_FROM: u32     = 0x00000040;
+const FS_MOVED_TO: u32       = 0x00000080;
+const FS_CREATE: u32         = 0x00000100;
+const FS_DELETE: u32         = 0x00000200;
+const FS_DELETE_SELF: u32    = 0x00000400;
+const FS_MOVE_SELF: u32      = 0x00000800;
+const FS_OPEN_EXEC: u32      = 0x00001000;
+const FS_UNMOUNT: u32        = 0x00002000;
+const FS_Q_OVERFLOW: u32     = 0x00004000;
+const FS_ERROR: u32          = 0x00008000;
+const FS_IN_IGNORED: u32     = 0x00008000;
+const FS_OPEN_PERM: u32      = 0x00010000;
+const FS_ACCESS_PERM: u32    = 0x00020000;
+const FS_OPEN_EXEC_PERM: u32 = 0x00040000;
+const FS_EXCL_UNLINK: u32    = 0x04000000;
+const FS_EVENT_ON_CHILD: u32 = 0x08000000;
+const FS_RENAME: u32         = 0x10000000;
+const FS_DN_MULTISHOT: u32   = 0x20000000;
+const FS_ISDIR: u32          = 0x40000000;
+const FS_IN_ONESHOT: u32     = 0x80000000;
 
-pub const FMODE_READ: u32     = 0x0000001;
-pub const FMODE_WRITE: u32    = 0x0000002;
-pub const FMODE_OPENED: u32   = 0x0080000;
-pub const FMODE_CREATED: u32  = 0x0100000;
-pub const FMODE_NONOTIFY: u32 = 0x4000000;
+const FMODE_READ: u32     = 0x0000001;
+const FMODE_WRITE: u32    = 0x0000002;
+const FMODE_OPENED: u32   = 0x0080000;
+const FMODE_CREATED: u32  = 0x0100000;
+const FMODE_NONOTIFY: u32 = 0x4000000;
 
-pub const DCACHE_ENTRY_TYPE: u32     = 0x00700000;
-pub const DCACHE_DIRECTORY_TYPE: u32 = 0x00200000;
-pub const DCACHE_AUTODIR_TYPE: u32   = 0x00300000;
+const DCACHE_ENTRY_TYPE: u32     = 0x00700000;
+const DCACHE_DIRECTORY_TYPE: u32 = 0x00200000;
+const DCACHE_AUTODIR_TYPE: u32   = 0x00300000;
 
-pub const S_IFMT: u32    = 0o170000;
-pub const S_IFSOCK: u32  = 0o140000;
-pub const S_IFLNK: u32   = 0o120000;
-pub const S_IFREG: u32   = 0o100000;
-pub const S_IFBLK: u32   = 0o060000;
-pub const S_IFDIR: u32   = 0o040000;
-pub const S_IFCHR: u32   = 0o020000;
-pub const S_IFIFO: u32   = 0o010000;
-pub const S_ISUID: u32   = 0o004000;
-pub const S_ISGID: u32   = 0o002000;
-pub const S_ISVTX: u32   = 0o001000;
+const S_IFMT: u32    = 0o170000;
+const S_IFSOCK: u32  = 0o140000;
+const S_IFLNK: u32   = 0o120000;
+const S_IFREG: u32   = 0o100000;
+const S_IFBLK: u32   = 0o060000;
+const S_IFDIR: u32   = 0o040000;
+const S_IFCHR: u32   = 0o020000;
+const S_IFIFO: u32   = 0o010000;
+const S_ISUID: u32   = 0o004000;
+const S_ISGID: u32   = 0o002000;
+const S_ISVTX: u32   = 0o001000;
 
-pub fn s_islnk(m: u32) -> bool  { (m & S_IFMT) == S_IFLNK }
-pub fn s_isreg(m: u32) -> bool  { (m & S_IFMT) == S_IFREG }
-pub fn s_isdir(m: u32) -> bool  { (m & S_IFMT) == S_IFDIR }
-pub fn s_ischr(m: u32) -> bool  { (m & S_IFMT) == S_IFCHR }
-pub fn s_isblk(m: u32) -> bool  { (m & S_IFMT) == S_IFBLK }
-pub fn s_isfifo(m: u32) -> bool { (m & S_IFMT) == S_IFIFO }
-pub fn s_issock(m: u32) -> bool { (m & S_IFMT) == S_IFSOCK }
+fn s_islnk(m: u32) -> bool  { (m & S_IFMT) == S_IFLNK }
+fn s_isreg(m: u32) -> bool  { (m & S_IFMT) == S_IFREG }
+fn s_isdir(m: u32) -> bool  { (m & S_IFMT) == S_IFDIR }
+fn s_ischr(m: u32) -> bool  { (m & S_IFMT) == S_IFCHR }
+fn s_isblk(m: u32) -> bool  { (m & S_IFMT) == S_IFBLK }
+fn s_isfifo(m: u32) -> bool { (m & S_IFMT) == S_IFIFO }
+fn s_issock(m: u32) -> bool { (m & S_IFMT) == S_IFSOCK }
 
-pub const ATTR_MODE: u32      = 1 << 0;
-pub const ATTR_UID: u32       = 1 << 1;
-pub const ATTR_GID: u32       = 1 << 2;
-pub const ATTR_SIZE: u32      = 1 << 3;
-pub const ATTR_ATIME: u32     = 1 << 4;
-pub const ATTR_MTIME: u32     = 1 << 5;
-pub const ATTR_CTIME: u32     = 1 << 6;
-pub const ATTR_ATIME_SET: u32 = 1 << 7;
-pub const ATTR_MTIME_SET: u32 = 1 << 8;
-pub const ATTR_FORCE: u32     = 1 << 9;
-pub const ATTR_KILL_SUID: u32 = 1 << 11;
-pub const ATTR_KILL_SGID: u32 = 1 << 12;
-pub const ATTR_FILE: u32      = 1 << 13;
-pub const ATTR_KILL_PRIV: u32 = 1 << 14;
-pub const ATTR_OPEN: u32      = 1 << 15;
-pub const ATTR_TIMES_SET: u32 = 1 << 16;
-pub const ATTR_TOUCH: u32     = 1 << 17;
+const ATTR_MODE: u32      = 1 << 0;
+const ATTR_UID: u32       = 1 << 1;
+const ATTR_GID: u32       = 1 << 2;
+const ATTR_SIZE: u32      = 1 << 3;
+const ATTR_ATIME: u32     = 1 << 4;
+const ATTR_MTIME: u32     = 1 << 5;
+const ATTR_CTIME: u32     = 1 << 6;
+const ATTR_ATIME_SET: u32 = 1 << 7;
+const ATTR_MTIME_SET: u32 = 1 << 8;
+const ATTR_FORCE: u32     = 1 << 9;
+const ATTR_KILL_SUID: u32 = 1 << 11;
+const ATTR_KILL_SGID: u32 = 1 << 12;
+const ATTR_FILE: u32      = 1 << 13;
+const ATTR_KILL_PRIV: u32 = 1 << 14;
+const ATTR_OPEN: u32      = 1 << 15;
+const ATTR_TIMES_SET: u32 = 1 << 16;
+const ATTR_TOUCH: u32     = 1 << 17;
 
-pub const USER_READ: i16   = 256;
-pub const USER_WRITE: i16  = 128;
-pub const USER_EXE: i16    = 64;
-pub const GROUP_READ: i16  = 32;
-pub const GROUP_WRITE: i16 = 16;
-pub const GROUP_EXE: i16   = 8;
-pub const OTHER_READ: i16  = 4;
-pub const OTHER_WRITE: i16 = 2;
-pub const OTHER_EXE: i16   = 1;
+const USER_READ: i16   = 256;
+const USER_WRITE: i16  = 128;
+const USER_EXE: i16    = 64;
+const GROUP_READ: i16  = 32;
+const GROUP_WRITE: i16 = 16;
+const GROUP_EXE: i16   = 8;
+const OTHER_READ: i16  = 4;
+const OTHER_WRITE: i16 = 2;
+const OTHER_EXE: i16   = 1;
 
 #[repr(C)]
-pub struct FS_PERM {
-    pub index: i16,
-    pub value: i16,
-    pub perm: u8,
+struct FS_PERM {
+    index: i16,
+    value: i16,
+    perm: u8,
 }
 
 #[repr(u32)]
 #[derive(Debug, Clone, Copy)]
-pub enum INDEX_FS_PERM {
+enum INDEX_FS_PERM {
     I_USER_READ,
     I_USER_WRITE,
     I_USER_EXE,
@@ -114,17 +114,17 @@ pub enum INDEX_FS_PERM {
 }
 
 #[repr(C)]
-pub struct FS_EVENT {
-    pub index: i16,
-    pub value: i16,
-    pub name: [u8; 16],
-    pub shortname: [u8; 4],
-    pub shortname2: [u8; 4],
+struct FS_EVENT {
+    index: i16,
+    value: i16,
+    name: [u8; 16],
+    shortname: [u8; 4],
+    shortname2: [u8; 4],
 }
 
 #[repr(u32)]
 #[derive(Debug, Clone, Copy)]
-pub enum INDEX_FS_EVENT {
+enum INDEX_FS_EVENT {
     I_CREATE,
     I_OPEN,
     I_OPEN_EXEC,
@@ -142,7 +142,7 @@ pub enum INDEX_FS_EVENT {
     I_Q_OVERFLOW,
 }
 
-pub static FSEVT: [FS_EVENT; 16] = [
+static FSEVT: [FS_EVENT; 16] = [
     FS_EVENT { index: 0, value: FS_CREATE as i16, name: *b"CREATE\0\0\0\0\0\0\0\0\0\0", shortname: *b"CRE\0", shortname2: *b"CR\0\0" },
     FS_EVENT { index: 1, value: FS_OPEN as i16, name: *b"OPEN\0\0\0\0\0\0\0\0\0\0\0\0", shortname: *b"OPN\0", shortname2: *b"OP\0\0" },
     FS_EVENT { index: 2, value: FS_OPEN_EXEC as i16, name: *b"OPEN_EXEC\0\0\0\0\0\0\0", shortname: *b"OPX\0", shortname2: *b"OX\0\0" },
@@ -161,7 +161,7 @@ pub static FSEVT: [FS_EVENT; 16] = [
     FS_EVENT { index: 15, value: 0, name: [0; 16], shortname: [0; 4], shortname2: [0; 4] },
 ];
 
-pub fn tolower_str(s: &mut [u8]) {
+fn tolower_str(s: &mut [u8]) {
     for b in s.iter_mut() {
         if *b == 0 {
             break;
@@ -200,6 +200,7 @@ const FILE_PERMS_LEN_MAX: usize = 32;
 const CMD_LEN_MAX: usize = 512;
 const CMD_OUTPUT_LEN_MAX: usize = 1024;
 const JSON_OUT_LEN_MAX: usize = 8192;
+const FS_EVENT_MAX: usize = 16;
 const MODE_LEN_MAX: usize = 12;
 const DATETIME_LEN_MAX: usize = 64;
 const DEV_NAME_LEN_MAX: usize = 32;
@@ -230,10 +231,10 @@ enum Check {
 // define filesystem event info for ringbuffer event handler
 #[repr(C)]
 struct FsEventInfo {
-    pub index: i32,
-    pub dentry: *mut core::ffi::c_void,
-    pub dentry_old: *mut core::ffi::c_void,
-    pub func: *const u8,
+    index: i32,
+    dentry: *mut core::ffi::c_void,
+    dentry_old: *mut core::ffi::c_void,
+    func: *const u8,
 }
 
 // define common record sent to ringbuffer for user
@@ -376,7 +377,7 @@ enum JsonObj {
     Max,
 }
 
-pub static CRC64_TAB: [u64; 256] = [
+static CRC64_TAB: [u64; 256] = [
     0x0000000000000000, 0x7ad870c830358979, 0xf5b0e190606b12f2, 0x8f689158505e9b8b,
     0xc038e5739841b68f, 0xbae095bba8743ff6, 0x358804e3f82aa47d, 0x4f50742bc81f2d04,
     0xab28ecb46814fe75, 0xd1f09c7c5821770c, 0x5e980d24087fec87, 0x24407dec384a65fe,
@@ -443,7 +444,7 @@ pub static CRC64_TAB: [u64; 256] = [
     0xa6df411fbfb21ca3, 0xdc0731d78f879fda, 0x536fa08fdfd90e51, 0x29b7d047efec8728,
 ];
 
-pub fn crc64(data: &[u8]) -> u64 {
+fn crc64(data: &[u8]) -> u64 {
     let mut crc: u64 = 0;
     for &byte in data {
         let idx = ((crc >> 56) as u8 ^ byte) as usize;
