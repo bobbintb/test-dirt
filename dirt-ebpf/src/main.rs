@@ -1,7 +1,7 @@
 #![no_std]
 #![no_main]
 
-use dirt-common::*;
+use dirt_common::*;
 
 use core::{mem, ptr, slice};
 
