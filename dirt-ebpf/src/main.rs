@@ -69,8 +69,8 @@ fn handle_fs_event(ctx: *mut c_void, event: *const FsEventInfo) -> i32 {
             return 0;
         }
 
-        let ino = bpf_core_read(inode, b"i_ino\0") as u32;
-        let imode = bpf_core_read(inode, b"i_mode\0") as u32;
+        let ino = unsafe { (*inode).i_ino };
+        let imode = unsafe { (*inode).i_mode };
         if !(s_isreg(imode) || s_islnk(imode)) {
             return 0;
         }
