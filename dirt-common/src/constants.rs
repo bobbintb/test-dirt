@@ -237,18 +237,29 @@ struct FsEventInfo {
 }
 
 // define common record sent to ringbuffer for user
-#[derive(Debug)]
+#[repr(C)]
 struct Record {
     r#type: u32,
     ts: u64,
 }
 
-// define filesystem record sent to ringbuffer for user
-#[derive(Debug)]
+#[repr(C)]
+union FileNameUnion {
+    split: FileNameSplit,
+    full: [u8; FILENAME_LEN_MAX],
+}
+
+#[repr(C)]
+struct FileNameSplit {
+    filename_from: [u8; FILENAME_LEN_MAX / 2],
+    filename_to: [u8; FILENAME_LEN_MAX / 2],
+}
+
+#[repr(C)]
 struct RecordFs {
     rc: Record,
     events: u32,
-    event: Vec<u32>, // Assuming FS_EVENT_MAX is defined elsewhere
+    event: [u32; FS_EVENT_MAX],
     ino: u32,
     imode: u32,
     inlink: u32,
@@ -257,9 +268,8 @@ struct RecordFs {
     mtime_nsec: u64,
     ctime_nsec: u64,
     isize_first: u64,
-    filepath: [u8; FILEPATH_LEN_MAX], // Assuming FILEPATH_LEN_MAX is defined elsewhere
-    filename_from: [u8; FILENAME_LEN_MAX / 2], // Assuming FILENAME_LEN_MAX is defined elsewhere
-    filename_to: [u8; FILENAME_LEN_MAX / 2], // Assuming FILENAME_LEN_MAX is defined elsewhere
+    filepath: [u8; FILEPATH_LEN_MAX],
+    filename: FileNameUnion,
 }
 
 // define ringbuffer stats collected on records
