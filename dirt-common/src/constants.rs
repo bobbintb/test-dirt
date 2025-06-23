@@ -1,8 +1,6 @@
 #![allow(non_camel_case_types)]
 #![allow(dead_code)]
 
-use core::cmp::{max, min};
-
 const KERNEL_VERSION_MIN: u32 = 5;
 const KERNEL_MAJOR_MIN: u32 = 10;
 
