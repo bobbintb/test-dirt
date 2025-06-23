@@ -228,11 +228,12 @@ enum Check {
 }
 
 // define filesystem event info for ringbuffer event handler
+#[repr(C)]
 struct FsEventInfo {
-    index: usize,
-    dentry: *mut std::ffi::c_void, // Placeholder for dentry type
-    dentry_old: *mut std::ffi::c_void, // Placeholder for dentry type
-    func: *mut std::os::raw::c_char, // Placeholder for function pointer
+    pub index: i32,
+    pub dentry: *mut core::ffi::c_void,
+    pub dentry_old: *mut core::ffi::c_void,
+    pub func: *const u8,
 }
 
 // define common record sent to ringbuffer for user
