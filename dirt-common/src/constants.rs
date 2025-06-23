@@ -161,6 +161,210 @@ pub static FSEVT: [FS_EVENT; 16] = [
     FS_EVENT { index: 15, value: 0, name: [0; 16], shortname: [0; 4], shortname2: [0; 4] },
 ];
 
+pub fn tolower_str(s: &mut [u8]) {
+    for b in s.iter_mut() {
+        if *b == 0 {
+            break;
+        }
+        *b = b.to_ascii_lowercase();
+    }
+}
+
+const fn max<X: PartialOrd>(x: X, y: X) -> X {
+    if x > y { x } else { y }
+}
+
+const fn min<X: PartialOrd>(x: X, y: X) -> X {
+    if x < y { x } else { y }
+}
+
+const MAX_STACK_TRACE_DEPTH: usize = 16;
+const SYS_FILE_JIT_ENABLE: &str = "/proc/sys/net/core/bpf_jit_enable";
+const SYS_FILE_VMLINUX: &str = "/sys/kernel/btf/vmlinux";
+const CACHE_ENTRIES_MAX: usize = 65536;
+const MAP_RECORDS_MAX: usize = 65536;
+const MAP_PIDS_MAX: usize = 8192;
+const RECORD_TYPE_FILE: u32 = 1;
+const TASK_COMM_LEN: usize = 32;
+const TASK_COMM_SHORT_LEN: usize = 16;
+const DNAME_INLINE_LEN: usize = 32;
+const VERSION_LEN_MAX: usize = 16;
+const IF_MAC_LEN_MAX: usize = 20;
+const IF_INDEX_LEN_MAX: usize = 8;
+const FILENAME_LEN_MAX: usize = 32;
+const FILEPATH_LEN_MAX: usize = 96;
+const FILEPATH_NODE_MAX: usize = 16;
+const FILE_READ_LEN_MAX: usize = 4096;
+const FILE_EVENTS_LEN_MAX: usize = 256;
+const FILE_PERMS_LEN_MAX: usize = 32;
+const CMD_LEN_MAX: usize = 512;
+const CMD_OUTPUT_LEN_MAX: usize = 1024;
+const JSON_OUT_LEN_MAX: usize = 8192;
+const MODE_LEN_MAX: usize = 12;
+const DATETIME_LEN_MAX: usize = 64;
+const DEV_NAME_LEN_MAX: usize = 32;
+const DEV_FSTYPE_LEN_MAX: usize = 8;
+const TOKEN_LEN_MAX: usize = 64;
+const DBG_LEN_MAX: usize = 16;
+const UNIX_SOCKET_PATH_MAX: usize = 108;
+
+const fn key_pid_ino(p: u64, i: u64) -> u64 {
+    (p << 32) | i
+}
+
+const fn getdev(dev: u64) -> u32 {
+    ((dev >> 20) as u32) << 8 | (dev & ((1u64 << 20) - 1)) as u32
+}
+
+// define macros for startup requirement checks
+const CHECK_MAX: usize = 3;
+const CHECK_MSG_LEN_MAX: usize = 64;
+
+#[derive(Debug)]
+enum Check {
+    Fail,
+    Ok,
+    Warn,
+}
+
+// define filesystem event info for ringbuffer event handler
+struct FsEventInfo {
+    index: usize,
+    dentry: *mut std::ffi::c_void, // Placeholder for dentry type
+    dentry_old: *mut std::ffi::c_void, // Placeholder for dentry type
+    func: *mut std::os::raw::c_char, // Placeholder for function pointer
+}
+
+// define common record sent to ringbuffer for user
+#[derive(Debug)]
+struct Record {
+    r#type: u32,
+    ts: u64,
+}
+
+// define filesystem record sent to ringbuffer for user
+#[derive(Debug)]
+struct RecordFs {
+    rc: Record,
+    events: u32,
+    event: Vec<u32>, // Assuming FS_EVENT_MAX is defined elsewhere
+    ino: u32,
+    imode: u32,
+    inlink: u32,
+    isize: u64,
+    atime_nsec: u64,
+    mtime_nsec: u64,
+    ctime_nsec: u64,
+    isize_first: u64,
+    filepath: [u8; FILEPATH_LEN_MAX], // Assuming FILEPATH_LEN_MAX is defined elsewhere
+    filename_from: [u8; FILENAME_LEN_MAX / 2], // Assuming FILENAME_LEN_MAX is defined elsewhere
+    filename_to: [u8; FILENAME_LEN_MAX / 2], // Assuming FILENAME_LEN_MAX is defined elsewhere
+}
+
+// define ringbuffer stats collected on records
+#[derive(Debug)]
+struct Stats {
+    fs_records: u64,
+    fs_records_deleted: u64,
+    fs_records_dropped: u64,
+    fs_records_rb_max: u64,
+    fs_events: u64,
+}
+
+// define output types
+const JSON_SUB_KEY_MAX: usize = 16;
+const JSON_KEY_LEN_MAX: usize = 32;
+const JSON_LEGEND_LEN_MAX: usize = 128;
+const JSON_TYPE_MAX: usize = 3;
+const JSON_FULL: usize = 0;
+const JSON_MIN: usize = 1;
+const TABLE_OUTPUT: usize = 2;
+
+// define json key
+#[derive(Debug)]
+struct JsonKey {
+    index: usize,
+    jtypekey: [[u8; JSON_KEY_LEN_MAX]; JSON_TYPE_MAX],
+    jlegend: [u8; JSON_LEGEND_LEN_MAX],
+}
+
+// define json sub key
+#[derive(Debug)]
+struct JsonSubKey {
+    index: usize,
+    sub: Vec<JsonSubKeyEntry>, // Using a vector for dynamic size
+}
+
+#[derive(Debug)]
+struct JsonSubKeyEntry {
+    jkey: [u8; JSON_KEY_LEN_MAX],
+    jlegend: [u8; JSON_LEGEND_LEN_MAX],
+}
+
+// define json key index
+#[derive(Debug)]
+enum IndexJsonKey {
+    InfoTimestamp,
+    FilePath,
+    File,
+    FileMode,
+    FileEventCount,
+    FileEvents,
+    FileInode,
+    FileInodeLinkCount,
+    FileSize,
+    FileSizeChange,
+    FileAccessTime,
+    FileStatusChangeTime,
+    FileModificationTime,
+    Max,
+}
+
+// JSON container types
+#[derive(Debug)]
+enum MkjsonContainerType {
+    Arr,
+    Obj,
+}
+
+// JSON data types
+#[derive(Debug)]
+enum MkjsonValueType {
+    String,
+    Timestamp,
+    Json,
+    JsonFree,
+    Int,
+    LlInt,
+    UInt,
+    LlUInt,
+    Double,
+    LDouble,
+    SciDouble,
+    SciLDouble,
+    Bool,
+    Null,
+    IgnString,
+    IgnTimestamp,
+    IgnJson,
+    IgnInt,
+    IgnLlInt,
+    IgnUInt,
+    IgnLlUInt,
+    IgnDouble,
+    IgnLDouble,
+    IgnBool,
+    IgnNull,
+}
+
+// define json output messages
+#[derive(Debug)]
+enum JsonObj {
+    Info,
+    File,
+    Max,
+}
+
 pub static CRC64_TAB: [u64; 256] = [
     0x0000000000000000, 0x7ad870c830358979, 0xf5b0e190606b12f2, 0x8f689158505e9b8b,
     0xc038e5739841b68f, 0xbae095bba8743ff6, 0x358804e3f82aa47d, 0x4f50742bc81f2d04,
