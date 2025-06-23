@@ -17,7 +17,7 @@ use aya_ebpf::{
         bpf_map_lookup_elem,
         bpf_map_update_elem,
         bpf_map_delete_elem,
-        bpf_probe_read_kernel_str,
+        bpf_probe_read_kernel_str_bytes,
         bpf_ringbuf_output,
         bpf_ringbuf_query,
         bpf_printk,
@@ -66,7 +66,7 @@ fn handle_fs_event(ctx: *mut c_void, event: *const FsEventInfo) -> i32 {
         ) as *const Inode;
 
         let mut filename = [0u8; FILENAME_LEN_MAX];
-        bpf_probe_read_kernel_str(&mut filename, bpf_core_read(dentry, b"d_name.name\0") as *const u8);
+        bpf_probe_read_kernel_str_bytes(&mut filename, bpf_core_read(dentry, b"d_name.name\0") as *const u8);
 
         if inode.is_null() || filename[0] == 0 {
             return 0;
@@ -85,7 +85,7 @@ fn handle_fs_event(ctx: *mut c_void, event: *const FsEventInfo) -> i32 {
         if !r.is_null() {
             if fsevt[index as usize].value == FS_MOVED_TO {
                 core::ptr::write_bytes((*r).filename_to.as_mut_ptr(), 0, (*r).filename_to.len());
-                bpf_probe_read_kernel_str(&mut (*r).filename_to, bpf_core_read(dentry, b"d_name.name\0") as *const u8);
+                bpf_probe_read_kernel_str_bytes(&mut (*r).filename_to, bpf_core_read(dentry, b"d_name.name\0") as *const u8);
             }
             (*r).rc.ts = bpf_ktime_get_ns();
         } else {
@@ -97,7 +97,7 @@ fn handle_fs_event(ctx: *mut c_void, event: *const FsEventInfo) -> i32 {
             (*r).rc.ts = bpf_ktime_get_ns();
             (*r).ino = ino;
             core::ptr::write_bytes((*r).filename.as_mut_ptr(), 0, (*r).filename.len());
-            bpf_probe_read_kernel_str(&mut (*r).filename, bpf_core_read(dentry, b"d_name.name\0") as *const u8);
+            bpf_probe_read_kernel_str_bytes(&mut (*r).filename, bpf_core_read(dentry, b"d_name.name\0") as *const u8);
             (*r).isize_first = bpf_core_read(inode, b"i_size\0") as u64;
 
             let mut pathnode: [*const u8; FILEPATH_NODE_MAX] = core::mem::zeroed();
@@ -120,7 +120,7 @@ fn handle_fs_event(ctx: *mut c_void, event: *const FsEventInfo) -> i32 {
             for cnt in (1..=num_nodes).rev() {
                 let node = pathnode[cnt];
                 if !node.is_null() && offset < ((*r).filepath.len() - DNAME_INLINE_LEN) {
-                    let len = bpf_probe_read_kernel_str(
+                    let len = bpf_probe_read_kernel_str_bytes(
                         &mut (*r).filepath[offset..],
                         node,
                     );
