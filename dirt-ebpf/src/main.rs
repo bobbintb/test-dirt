@@ -26,22 +26,19 @@ use aya_ebpf::{
 
 use aya_log_ebpf::info;
 
-
-
+use crate::{RECORD_FS, STATS};
 
 #[map(name = "ringbuf_records")]
-static mut RINGBUF_RECORDS: RingBuf<RecordFs> = RingBuf::<RecordFs>::with_max_entries(8192);
+static mut RINGBUF_RECORDS: RingBuf = RingBuf::new();
 
 #[map(name = "hash_records")]
-static mut HASH_RECORDS: LruHashMap<u64, RecordFs> = LruHashMap::<u64, RecordFs>::with_max_entries(8192);
+static mut HASH_RECORDS: HashMap<u64, RECORD_FS> = HashMap::new();
 
 #[map(name = "heap_record_fs")]
-static mut HEAP_RECORD_FS: PerCpuArray<RecordFs> = PerCpuArray::<RecordFs>::with_max_entries(1);
+static mut HEAP_RECORD_FS: PerCpuArray<RECORD_FS> = PerCpuArray::new();
 
 #[map(name = "stats")]
-static mut STATS: Array<Stats> = Array::<Stats>::with_max_entries(1);
-
-
+static mut STATS: Array<STATS> = Array::new();
 
 #[inline(always)]
 fn handle_fs_event(ctx: *mut c_void, event: *const FsEventInfo) -> i32 {
