@@ -56,13 +56,13 @@ pub const S_ISUID: u32   = 0o004000;
 pub const S_ISGID: u32   = 0o002000;
 pub const S_ISVTX: u32   = 0o001000;
 
-pub fn S_ISLNK(m: u32) -> bool  { (m & S_IFMT) == S_IFLNK }
-pub fn S_ISREG(m: u32) -> bool  { (m & S_IFMT) == S_IFREG }
-pub fn S_ISDIR(m: u32) -> bool  { (m & S_IFMT) == S_IFDIR }
-pub fn S_ISCHR(m: u32) -> bool  { (m & S_IFMT) == S_IFCHR }
-pub fn S_ISBLK(m: u32) -> bool  { (m & S_IFMT) == S_IFBLK }
-pub fn S_ISFIFO(m: u32) -> bool { (m & S_IFMT) == S_IFIFO }
-pub fn S_ISSOCK(m: u32) -> bool { (m & S_IFMT) == S_IFSOCK }
+pub fn s_islnk(m: u32) -> bool  { (m & S_IFMT) == S_IFLNK }
+pub fn s_isreg(m: u32) -> bool  { (m & S_IFMT) == S_IFREG }
+pub fn s_isdir(m: u32) -> bool  { (m & S_IFMT) == S_IFDIR }
+pub fn s_ischr(m: u32) -> bool  { (m & S_IFMT) == S_IFCHR }
+pub fn s_isblk(m: u32) -> bool  { (m & S_IFMT) == S_IFBLK }
+pub fn s_isfifo(m: u32) -> bool { (m & S_IFMT) == S_IFIFO }
+pub fn s_issock(m: u32) -> bool { (m & S_IFMT) == S_IFSOCK }
 
 pub const ATTR_MODE: u32      = 1 << 0;
 pub const ATTR_UID: u32       = 1 << 1;
