@@ -1,6 +1,9 @@
 #![allow(non_camel_case_types)]
 #![allow(dead_code)]
 
+// extern crate alloc; // No alloc for no_std eBPF if not supported by aya-ebpf 0.1.1
+// use alloc::vec::Vec;
+
 pub const KERNEL_VERSION_MIN: u32 = 5;
 pub const KERNEL_MAJOR_MIN: u32 = 10;
 
@@ -142,7 +145,8 @@ pub enum INDEX_FS_EVENT {
     I_Q_OVERFLOW,
 }
 
-pub static FSEVT: [FS_EVENT; 16] = [
+pub const FS_EVENT_MAX: usize = 16;
+pub static FSEVT: [FS_EVENT; FS_EVENT_MAX] = [
     FS_EVENT { index: 0, value: FS_CREATE as i16, name: *b"CREATE\0\0\0\0\0\0\0\0\0\0", shortname: *b"CRE\0", shortname2: *b"CR\0\0" },
     FS_EVENT { index: 1, value: FS_OPEN as i16, name: *b"OPEN\0\0\0\0\0\0\0\0\0\0\0\0", shortname: *b"OPN\0", shortname2: *b"OP\0\0" },
     FS_EVENT { index: 2, value: FS_OPEN_EXEC as i16, name: *b"OPEN_EXEC\0\0\0\0\0\0\0", shortname: *b"OPX\0", shortname2: *b"OX\0\0" },
@@ -170,49 +174,49 @@ pub fn tolower_str(s: &mut [u8]) {
     }
 }
 
-const fn max<X: PartialOrd>(x: X, y: X) -> X {
+fn max<X: PartialOrd>(x: X, y: X) -> X {
     if x > y { x } else { y }
 }
 
-const fn min<X: PartialOrd>(x: X, y: X) -> X {
+fn min<X: PartialOrd>(x: X, y: X) -> X {
     if x < y { x } else { y }
 }
 
-const MAX_STACK_TRACE_DEPTH: usize = 16;
-const SYS_FILE_JIT_ENABLE: &str = "/proc/sys/net/core/bpf_jit_enable";
-const SYS_FILE_VMLINUX: &str = "/sys/kernel/btf/vmlinux";
-const CACHE_ENTRIES_MAX: usize = 65536;
-const MAP_RECORDS_MAX: usize = 65536;
-const MAP_PIDS_MAX: usize = 8192;
-const RECORD_TYPE_FILE: u32 = 1;
-const TASK_COMM_LEN: usize = 32;
-const TASK_COMM_SHORT_LEN: usize = 16;
-const DNAME_INLINE_LEN: usize = 32;
-const VERSION_LEN_MAX: usize = 16;
-const IF_MAC_LEN_MAX: usize = 20;
-const IF_INDEX_LEN_MAX: usize = 8;
-const FILENAME_LEN_MAX: usize = 32;
-const FILEPATH_LEN_MAX: usize = 96;
-const FILEPATH_NODE_MAX: usize = 16;
-const FILE_READ_LEN_MAX: usize = 4096;
-const FILE_EVENTS_LEN_MAX: usize = 256;
-const FILE_PERMS_LEN_MAX: usize = 32;
-const CMD_LEN_MAX: usize = 512;
-const CMD_OUTPUT_LEN_MAX: usize = 1024;
-const JSON_OUT_LEN_MAX: usize = 8192;
-const MODE_LEN_MAX: usize = 12;
-const DATETIME_LEN_MAX: usize = 64;
-const DEV_NAME_LEN_MAX: usize = 32;
-const DEV_FSTYPE_LEN_MAX: usize = 8;
-const TOKEN_LEN_MAX: usize = 64;
-const DBG_LEN_MAX: usize = 16;
-const UNIX_SOCKET_PATH_MAX: usize = 108;
+pub const MAX_STACK_TRACE_DEPTH: usize = 16;
+pub const SYS_FILE_JIT_ENABLE: &str = "/proc/sys/net/core/bpf_jit_enable"; // Keep non-pub if internal
+pub const SYS_FILE_VMLINUX: &str = "/sys/kernel/btf/vmlinux"; // Keep non-pub if internal
+pub const CACHE_ENTRIES_MAX: usize = 65536;
+pub const MAP_RECORDS_MAX: usize = 65536;
+pub const MAP_PIDS_MAX: usize = 8192;
+pub const RECORD_TYPE_FILE: u32 = 1;
+pub const TASK_COMM_LEN: usize = 32;
+pub const TASK_COMM_SHORT_LEN: usize = 16;
+pub const DNAME_INLINE_LEN: usize = 32;
+pub const VERSION_LEN_MAX: usize = 16;
+pub const IF_MAC_LEN_MAX: usize = 20;
+pub const IF_INDEX_LEN_MAX: usize = 8;
+pub const FILENAME_LEN_MAX: usize = 32;
+pub const FILEPATH_LEN_MAX: usize = 96;
+pub const FILEPATH_NODE_MAX: usize = 16;
+pub const FILE_READ_LEN_MAX: usize = 4096;
+pub const FILE_EVENTS_LEN_MAX: usize = 256;
+pub const FILE_PERMS_LEN_MAX: usize = 32;
+pub const CMD_LEN_MAX: usize = 512;
+pub const CMD_OUTPUT_LEN_MAX: usize = 1024;
+pub const JSON_OUT_LEN_MAX: usize = 8192;
+pub const MODE_LEN_MAX: usize = 12;
+pub const DATETIME_LEN_MAX: usize = 64;
+pub const DEV_NAME_LEN_MAX: usize = 32;
+pub const DEV_FSTYPE_LEN_MAX: usize = 8;
+pub const TOKEN_LEN_MAX: usize = 64;
+pub const DBG_LEN_MAX: usize = 16;
+pub const UNIX_SOCKET_PATH_MAX: usize = 108; // Keep non-pub if internal
 
-const fn key_pid_ino(p: u64, i: u64) -> u64 {
+pub const fn key_pid_ino(p: u64, i: u64) -> u64 { // Made pub
     (p << 32) | i
 }
 
-const fn getdev(dev: u64) -> u32 {
+pub const fn getdev(dev: u64) -> u32 { // Made pub
     ((dev >> 20) as u32) << 8 | (dev & ((1u64 << 20) - 1)) as u32
 }
 
@@ -229,7 +233,7 @@ enum Check {
 
 // define filesystem event info for ringbuffer event handler
 #[repr(C)]
-struct FsEventInfo {
+pub struct FsEventInfo {
     pub index: i32,
     pub dentry: *mut core::ffi::c_void,
     pub dentry_old: *mut core::ffi::c_void,
@@ -238,48 +242,49 @@ struct FsEventInfo {
 
 // define common record sent to ringbuffer for user
 #[repr(C)]
-struct Record {
-    r#type: u32,
-    ts: u64,
+pub struct Record {
+    pub r#type: u32,
+    pub ts: u64,
 }
 
 #[repr(C)]
-union FileNameUnion {
-    split: FileNameSplit,
-    full: [u8; FILENAME_LEN_MAX],
+pub union FileNameUnion {
+    pub split: FileNameSplit,
+    pub full: [u8; FILENAME_LEN_MAX],
 }
 
 #[repr(C)]
-struct FileNameSplit {
-    filename_from: [u8; FILENAME_LEN_MAX / 2],
-    filename_to: [u8; FILENAME_LEN_MAX / 2],
+#[derive(Clone, Copy)]
+pub struct FileNameSplit {
+    pub filename_from: [u8; FILENAME_LEN_MAX / 2],
+    pub filename_to: [u8; FILENAME_LEN_MAX / 2],
 }
 
 #[repr(C)]
-struct RecordFs {
-    rc: Record,
-    events: u32,
-    event: [u32; FS_EVENT_MAX],
-    ino: u32,
-    imode: u32,
-    inlink: u32,
-    isize: u64,
-    atime_nsec: u64,
-    mtime_nsec: u64,
-    ctime_nsec: u64,
-    isize_first: u64,
-    filepath: [u8; FILEPATH_LEN_MAX],
-    filename: FileNameUnion,
+pub struct RecordFs {
+    pub rc: Record,
+    pub events: u32,
+    pub event: [u32; FS_EVENT_MAX],
+    pub ino: u32,
+    pub imode: u32,
+    pub inlink: u32,
+    pub isize: u64,
+    pub atime_nsec: u64,
+    pub mtime_nsec: u64,
+    pub ctime_nsec: u64,
+    pub isize_first: u64,
+    pub filepath: [u8; FILEPATH_LEN_MAX],
+    pub filename: FileNameUnion,
 }
 
 // define ringbuffer stats collected on records
-#[derive(Debug)]
-struct Stats {
-    fs_records: u64,
-    fs_records_deleted: u64,
-    fs_records_dropped: u64,
-    fs_records_rb_max: u64,
-    fs_events: u64,
+#[derive(Debug, Copy, Clone)] // Added Copy, Clone for eBPF usage if needed directly in maps
+pub struct Stats {
+    pub fs_records: u64,
+    pub fs_records_deleted: u64,
+    pub fs_records_dropped: u64,
+    pub fs_records_rb_max: u64,
+    pub fs_events: u64,
 }
 
 // define output types
@@ -300,16 +305,16 @@ struct JsonKey {
 }
 
 // define json sub key
-#[derive(Debug)]
-struct JsonSubKey {
-    index: usize,
-    sub: Vec<JsonSubKeyEntry>, // Using a vector for dynamic size
+#[derive(Debug, Clone, Copy)] // Added Clone, Copy back
+pub struct JsonSubKey {
+    pub index: usize,
+    pub sub: Option<JsonSubKeyEntry>, // Back to Option for no_std without alloc
 }
 
-#[derive(Debug)]
-struct JsonSubKeyEntry {
-    jkey: [u8; JSON_KEY_LEN_MAX],
-    jlegend: [u8; JSON_LEGEND_LEN_MAX],
+#[derive(Debug, Clone, Copy)]
+pub struct JsonSubKeyEntry {
+    pub jkey: [u8; JSON_KEY_LEN_MAX],
+    pub jlegend: [u8; JSON_LEGEND_LEN_MAX],
 }
 
 // define json key index

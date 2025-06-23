@@ -13,9 +13,11 @@ license = "MIT OR Apache-2.0"
 [workspace.dependencies]
 aya = { version = "0.13.1", default-features = false }
 aya-build = { version = "0.1.2", default-features = false }
-aya-ebpf = { version = "0.1.1", default-features = false }
+aya-ebpf = { version = "0.1.1", default-features = false } # Reverted to 0.1.1, no alloc feature
 aya-log = { version = "0.2.1", default-features = false }
-aya-log-ebpf = { version = "0.1.1", default-features = false }
+aya-log-ebpf = { version = "0.1.1", default-features = false } # Reverted to 0.1.1
+aya-ebpf-bindings = { version = "0.1.1", default-features = false } # Added for dirt-ebpf
+cargo_metadata = { version = "0.19.0", default-features = false }
 
 anyhow = { version = "1", default-features = false }
 # `std` feature is currently required to build `clap`.

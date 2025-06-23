@@ -6,7 +6,8 @@ edition = "2021"
 [dependencies]
 dirt-common = { path = "../dirt-common" }
 
-aya-ebpf = { workspace = true }
+aya-ebpf = { workspace = true } # Removed alloc feature, as 0.1.1 doesn't have it
+# aya-ebpf-bindings = { workspace = true } # Removed direct dependency again
 aya-log-ebpf = { workspace = true }
 
 [build-dependencies]
