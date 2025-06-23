@@ -240,7 +240,7 @@ struct Record {
 
 #[repr(C)]
 union FileNameUnion {
-    split: FileNameSplit,
+    split: core::mem::ManuallyDrop<FileNameSplit>,
     full: [u8; FILENAME_LEN_MAX],
 }
 
@@ -286,22 +286,20 @@ const JSON_FULL: usize = 0;
 const JSON_MIN: usize = 1;
 const TABLE_OUTPUT: usize = 2;
 
-// define json key
-#[derive(Debug)]
+#[repr(C)]
 struct JsonKey {
     index: usize,
     jtypekey: [[u8; JSON_KEY_LEN_MAX]; JSON_TYPE_MAX],
     jlegend: [u8; JSON_LEGEND_LEN_MAX],
 }
 
-// define json sub key
-#[derive(Debug)]
+#[repr(C)]
 struct JsonSubKey {
     index: usize,
-    sub: Vec<JsonSubKeyEntry>, // Using a vector for dynamic size
+    sub: [JsonSubKeyEntry; JSON_SUB_KEY_MAX],
 }
 
-#[derive(Debug)]
+#[repr(C)]
 struct JsonSubKeyEntry {
     jkey: [u8; JSON_KEY_LEN_MAX],
     jlegend: [u8; JSON_LEGEND_LEN_MAX],
