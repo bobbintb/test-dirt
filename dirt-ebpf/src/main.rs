@@ -271,20 +271,20 @@ fn debug_dump_stack(ctx: *mut core::ffi::c_void, func: *const u8) {
         let kstacklen = bpf_get_stack(
             ctx,
             DEBUG_STACK.as_mut_ptr() as *mut _,
-            MAX_STACK_TRACE_DEPTH * core::mem::size_of::<i64>(),
+            (MAX_STACK_TRACE_DEPTH * core::mem::size_of::<i64>()) as i32,
             0,
         );
 
         if kstacklen > 0 {
-            bpf_printk(
-                b"KERNEL STACK (%u): %s\0".as_ptr(),
+            bpf_printk!(
+                b"KERNEL STACK (%u): %s\0",
                 (kstacklen / core::mem::size_of::<i64>()) as u32,
-                func,
+                func
             );
 
             for cnt in 0..MAX_STACK_TRACE_DEPTH {
                 if kstacklen > (cnt * core::mem::size_of::<i64>()) as i64 {
-                    bpf_printk(b"  %pB\0".as_ptr(), DEBUG_STACK[cnt as usize] as *const _);
+                    bpf_printk!(b"  %pB\0", DEBUG_STACK[cnt] as *const _);
                 }
             }
         }
