@@ -1,6 +1,8 @@
 #![allow(non_camel_case_types)]
 #![allow(dead_code)]
 
+use core::cmp::{max, min};
+
 const KERNEL_VERSION_MIN: u32 = 5;
 const KERNEL_MAJOR_MIN: u32 = 10;
 
@@ -168,14 +170,6 @@ fn tolower_str(s: &mut [u8]) {
         }
         *b = b.to_ascii_lowercase();
     }
-}
-
-const fn max<X: PartialOrd>(x: X, y: X) -> X {
-    if x > y { x } else { y }
-}
-
-const fn min<X: PartialOrd>(x: X, y: X) -> X {
-    if x < y { x } else { y }
 }
 
 const MAX_STACK_TRACE_DEPTH: usize = 16;
