@@ -1,99 +1,99 @@
 #![allow(non_camel_case_types)]
 #![allow(dead_code)]
 
-const KERNEL_VERSION_MIN: u32 = 5;
-const KERNEL_MAJOR_MIN: u32 = 10;
+pub const KERNEL_VERSION_MIN: u32 = 5;
+pub const KERNEL_MAJOR_MIN: u32 = 10;
 
-const MONITOR_NONE: u32 = 1;
-const MONITOR_FILE: u32 = 2;
+pub const MONITOR_NONE: u32 = 1;
+pub const MONITOR_FILE: u32 = 2;
 
-const FS_ACCESS: u32         = 0x00000001;
-const FS_MODIFY: u32         = 0x00000002;
-const FS_ATTRIB: u32         = 0x00000004;
-const FS_CLOSE_WRITE: u32    = 0x00000008;
-const FS_CLOSE_NOWRITE: u32  = 0x00000010;
-const FS_OPEN: u32           = 0x00000020;
-const FS_MOVED_FROM: u32     = 0x00000040;
-const FS_MOVED_TO: u32       = 0x00000080;
-const FS_CREATE: u32         = 0x00000100;
-const FS_DELETE: u32         = 0x00000200;
-const FS_DELETE_SELF: u32    = 0x00000400;
-const FS_MOVE_SELF: u32      = 0x00000800;
-const FS_OPEN_EXEC: u32      = 0x00001000;
-const FS_UNMOUNT: u32        = 0x00002000;
-const FS_Q_OVERFLOW: u32     = 0x00004000;
-const FS_ERROR: u32          = 0x00008000;
-const FS_IN_IGNORED: u32     = 0x00008000;
-const FS_OPEN_PERM: u32      = 0x00010000;
-const FS_ACCESS_PERM: u32    = 0x00020000;
-const FS_OPEN_EXEC_PERM: u32 = 0x00040000;
-const FS_EXCL_UNLINK: u32    = 0x04000000;
-const FS_EVENT_ON_CHILD: u32 = 0x08000000;
-const FS_RENAME: u32         = 0x10000000;
-const FS_DN_MULTISHOT: u32   = 0x20000000;
-const FS_ISDIR: u32          = 0x40000000;
-const FS_IN_ONESHOT: u32     = 0x80000000;
+pub const FS_ACCESS: u32         = 0x00000001;
+pub const FS_MODIFY: u32         = 0x00000002;
+pub const FS_ATTRIB: u32         = 0x00000004;
+pub const FS_CLOSE_WRITE: u32    = 0x00000008;
+pub const FS_CLOSE_NOWRITE: u32  = 0x00000010;
+pub const FS_OPEN: u32           = 0x00000020;
+pub const FS_MOVED_FROM: u32     = 0x00000040;
+pub const FS_MOVED_TO: u32       = 0x00000080;
+pub const FS_CREATE: u32         = 0x00000100;
+pub const FS_DELETE: u32         = 0x00000200;
+pub const FS_DELETE_SELF: u32    = 0x00000400;
+pub const FS_MOVE_SELF: u32      = 0x00000800;
+pub const FS_OPEN_EXEC: u32      = 0x00001000;
+pub const FS_UNMOUNT: u32        = 0x00002000;
+pub const FS_Q_OVERFLOW: u32     = 0x00004000;
+pub const FS_ERROR: u32          = 0x00008000;
+pub const FS_IN_IGNORED: u32     = 0x00008000;
+pub const FS_OPEN_PERM: u32      = 0x00010000;
+pub const FS_ACCESS_PERM: u32    = 0x00020000;
+pub const FS_OPEN_EXEC_PERM: u32 = 0x00040000;
+pub const FS_EXCL_UNLINK: u32    = 0x04000000;
+pub const FS_EVENT_ON_CHILD: u32 = 0x08000000;
+pub const FS_RENAME: u32         = 0x10000000;
+pub const FS_DN_MULTISHOT: u32   = 0x20000000;
+pub const FS_ISDIR: u32          = 0x40000000;
+pub const FS_IN_ONESHOT: u32     = 0x80000000;
 
-const FMODE_READ: u32     = 0x0000001;
-const FMODE_WRITE: u32    = 0x0000002;
-const FMODE_OPENED: u32   = 0x0080000;
-const FMODE_CREATED: u32  = 0x0100000;
-const FMODE_NONOTIFY: u32 = 0x4000000;
+pub const FMODE_READ: u32     = 0x0000001;
+pub const FMODE_WRITE: u32    = 0x0000002;
+pub const FMODE_OPENED: u32   = 0x0080000;
+pub const FMODE_CREATED: u32  = 0x0100000;
+pub const FMODE_NONOTIFY: u32 = 0x4000000;
 
-const DCACHE_ENTRY_TYPE: u32     = 0x00700000;
-const DCACHE_DIRECTORY_TYPE: u32 = 0x00200000;
-const DCACHE_AUTODIR_TYPE: u32   = 0x00300000;
+pub const DCACHE_ENTRY_TYPE: u32     = 0x00700000;
+pub const DCACHE_DIRECTORY_TYPE: u32 = 0x00200000;
+pub const DCACHE_AUTODIR_TYPE: u32   = 0x00300000;
 
-const S_IFMT: u32    = 0o170000;
-const S_IFSOCK: u32  = 0o140000;
-const S_IFLNK: u32   = 0o120000;
-const S_IFREG: u32   = 0o100000;
-const S_IFBLK: u32   = 0o060000;
-const S_IFDIR: u32   = 0o040000;
-const S_IFCHR: u32   = 0o020000;
-const S_IFIFO: u32   = 0o010000;
-const S_ISUID: u32   = 0o004000;
-const S_ISGID: u32   = 0o002000;
-const S_ISVTX: u32   = 0o001000;
+pub const S_IFMT: u32    = 0o170000;
+pub const S_IFSOCK: u32  = 0o140000;
+pub const S_IFLNK: u32   = 0o120000;
+pub const S_IFREG: u32   = 0o100000;
+pub const S_IFBLK: u32   = 0o060000;
+pub const S_IFDIR: u32   = 0o040000;
+pub const S_IFCHR: u32   = 0o020000;
+pub const S_IFIFO: u32   = 0o010000;
+pub const S_ISUID: u32   = 0o004000;
+pub const S_ISGID: u32   = 0o002000;
+pub const S_ISVTX: u32   = 0o001000;
 
-fn s_islnk(m: u32) -> bool  { (m & S_IFMT) == S_IFLNK }
-fn s_isreg(m: u32) -> bool  { (m & S_IFMT) == S_IFREG }
-fn s_isdir(m: u32) -> bool  { (m & S_IFMT) == S_IFDIR }
-fn s_ischr(m: u32) -> bool  { (m & S_IFMT) == S_IFCHR }
-fn s_isblk(m: u32) -> bool  { (m & S_IFMT) == S_IFBLK }
-fn s_isfifo(m: u32) -> bool { (m & S_IFMT) == S_IFIFO }
-fn s_issock(m: u32) -> bool { (m & S_IFMT) == S_IFSOCK }
+pub fn s_islnk(m: u32) -> bool  { (m & S_IFMT) == S_IFLNK }
+pub fn s_isreg(m: u32) -> bool  { (m & S_IFMT) == S_IFREG }
+pub fn s_isdir(m: u32) -> bool  { (m & S_IFMT) == S_IFDIR }
+pub fn s_ischr(m: u32) -> bool  { (m & S_IFMT) == S_IFCHR }
+pub fn s_isblk(m: u32) -> bool  { (m & S_IFMT) == S_IFBLK }
+pub fn s_isfifo(m: u32) -> bool { (m & S_IFMT) == S_IFIFO }
+pub fn s_issock(m: u32) -> bool { (m & S_IFMT) == S_IFSOCK }
 
-const ATTR_MODE: u32      = 1 << 0;
-const ATTR_UID: u32       = 1 << 1;
-const ATTR_GID: u32       = 1 << 2;
-const ATTR_SIZE: u32      = 1 << 3;
-const ATTR_ATIME: u32     = 1 << 4;
-const ATTR_MTIME: u32     = 1 << 5;
-const ATTR_CTIME: u32     = 1 << 6;
-const ATTR_ATIME_SET: u32 = 1 << 7;
-const ATTR_MTIME_SET: u32 = 1 << 8;
-const ATTR_FORCE: u32     = 1 << 9;
-const ATTR_KILL_SUID: u32 = 1 << 11;
-const ATTR_KILL_SGID: u32 = 1 << 12;
-const ATTR_FILE: u32      = 1 << 13;
-const ATTR_KILL_PRIV: u32 = 1 << 14;
-const ATTR_OPEN: u32      = 1 << 15;
-const ATTR_TIMES_SET: u32 = 1 << 16;
-const ATTR_TOUCH: u32     = 1 << 17;
+pub const ATTR_MODE: u32      = 1 << 0;
+pub const ATTR_UID: u32       = 1 << 1;
+pub const ATTR_GID: u32       = 1 << 2;
+pub const ATTR_SIZE: u32      = 1 << 3;
+pub const ATTR_ATIME: u32     = 1 << 4;
+pub const ATTR_MTIME: u32     = 1 << 5;
+pub const ATTR_CTIME: u32     = 1 << 6;
+pub const ATTR_ATIME_SET: u32 = 1 << 7;
+pub const ATTR_MTIME_SET: u32 = 1 << 8;
+pub const ATTR_FORCE: u32     = 1 << 9;
+pub const ATTR_KILL_SUID: u32 = 1 << 11;
+pub const ATTR_KILL_SGID: u32 = 1 << 12;
+pub const ATTR_FILE: u32      = 1 << 13;
+pub const ATTR_KILL_PRIV: u32 = 1 << 14;
+pub const ATTR_OPEN: u32      = 1 << 15;
+pub const ATTR_TIMES_SET: u32 = 1 << 16;
+pub const ATTR_TOUCH: u32     = 1 << 17;
 
-const USER_READ: i16   = 256;
-const USER_WRITE: i16  = 128;
-const USER_EXE: i16    = 64;
-const GROUP_READ: i16  = 32;
-const GROUP_WRITE: i16 = 16;
-const GROUP_EXE: i16   = 8;
-const OTHER_READ: i16  = 4;
-const OTHER_WRITE: i16 = 2;
-const OTHER_EXE: i16   = 1;
+pub const USER_READ: i16   = 256;
+pub const USER_WRITE: i16  = 128;
+pub const USER_EXE: i16    = 64;
+pub const GROUP_READ: i16  = 32;
+pub const GROUP_WRITE: i16 = 16;
+pub const GROUP_EXE: i16   = 8;
+pub const OTHER_READ: i16  = 4;
+pub const OTHER_WRITE: i16 = 2;
+pub const OTHER_EXE: i16   = 1;
 
 #[repr(C)]
-struct FS_PERM {
+pub struct FS_PERM {
     index: i16,
     value: i16,
     perm: u8,
@@ -101,7 +101,7 @@ struct FS_PERM {
 
 #[repr(u32)]
 #[derive(Debug, Clone, Copy)]
-enum INDEX_FS_PERM {
+pub enum INDEX_FS_PERM {
     I_USER_READ,
     I_USER_WRITE,
     I_USER_EXE,
@@ -114,7 +114,7 @@ enum INDEX_FS_PERM {
 }
 
 #[repr(C)]
-struct FS_EVENT {
+pub struct FS_EVENT {
     index: i16,
     value: i16,
     name: [u8; 16],
@@ -124,7 +124,7 @@ struct FS_EVENT {
 
 #[repr(u32)]
 #[derive(Debug, Clone, Copy)]
-enum INDEX_FS_EVENT {
+pub enum INDEX_FS_EVENT {
     I_CREATE,
     I_OPEN,
     I_OPEN_EXEC,
@@ -142,7 +142,7 @@ enum INDEX_FS_EVENT {
     I_Q_OVERFLOW,
 }
 
-static FSEVT: [FS_EVENT; 16] = [
+pub static FSEVT: [FS_EVENT; 16] = [
     FS_EVENT { index: 0, value: FS_CREATE as i16, name: *b"CREATE\0\0\0\0\0\0\0\0\0\0", shortname: *b"CRE\0", shortname2: *b"CR\0\0" },
     FS_EVENT { index: 1, value: FS_OPEN as i16, name: *b"OPEN\0\0\0\0\0\0\0\0\0\0\0\0", shortname: *b"OPN\0", shortname2: *b"OP\0\0" },
     FS_EVENT { index: 2, value: FS_OPEN_EXEC as i16, name: *b"OPEN_EXEC\0\0\0\0\0\0\0", shortname: *b"OPX\0", shortname2: *b"OX\0\0" },
@@ -161,7 +161,7 @@ static FSEVT: [FS_EVENT; 16] = [
     FS_EVENT { index: 15, value: 0, name: [0; 16], shortname: [0; 4], shortname2: [0; 4] },
 ];
 
-fn tolower_str(s: &mut [u8]) {
+pub fn tolower_str(s: &mut [u8]) {
     for b in s.iter_mut() {
         if *b == 0 {
             break;
@@ -170,51 +170,51 @@ fn tolower_str(s: &mut [u8]) {
     }
 }
 
-const MAX_STACK_TRACE_DEPTH: usize = 16;
-const SYS_FILE_JIT_ENABLE: &str = "/proc/sys/net/core/bpf_jit_enable";
-const SYS_FILE_VMLINUX: &str = "/sys/kernel/btf/vmlinux";
-const CACHE_ENTRIES_MAX: usize = 65536;
-const MAP_RECORDS_MAX: usize = 65536;
-const MAP_PIDS_MAX: usize = 8192;
-const RECORD_TYPE_FILE: u32 = 1;
-const TASK_COMM_LEN: usize = 32;
-const TASK_COMM_SHORT_LEN: usize = 16;
-const DNAME_INLINE_LEN: usize = 32;
-const VERSION_LEN_MAX: usize = 16;
-const IF_MAC_LEN_MAX: usize = 20;
-const IF_INDEX_LEN_MAX: usize = 8;
-const FILENAME_LEN_MAX: usize = 32;
-const FILEPATH_LEN_MAX: usize = 96;
-const FILEPATH_NODE_MAX: usize = 16;
-const FILE_READ_LEN_MAX: usize = 4096;
-const FILE_EVENTS_LEN_MAX: usize = 256;
-const FILE_PERMS_LEN_MAX: usize = 32;
-const CMD_LEN_MAX: usize = 512;
-const CMD_OUTPUT_LEN_MAX: usize = 1024;
-const JSON_OUT_LEN_MAX: usize = 8192;
-const FS_EVENT_MAX: usize = 16;
-const MODE_LEN_MAX: usize = 12;
-const DATETIME_LEN_MAX: usize = 64;
-const DEV_NAME_LEN_MAX: usize = 32;
-const DEV_FSTYPE_LEN_MAX: usize = 8;
-const TOKEN_LEN_MAX: usize = 64;
-const DBG_LEN_MAX: usize = 16;
-const UNIX_SOCKET_PATH_MAX: usize = 108;
+pub const MAX_STACK_TRACE_DEPTH: usize = 16;
+pub const SYS_FILE_JIT_ENABLE: &str = "/proc/sys/net/core/bpf_jit_enable";
+pub const SYS_FILE_VMLINUX: &str = "/sys/kernel/btf/vmlinux";
+pub const CACHE_ENTRIES_MAX: usize = 65536;
+pub const MAP_RECORDS_MAX: usize = 65536;
+pub const MAP_PIDS_MAX: usize = 8192;
+pub const RECORD_TYPE_FILE: u32 = 1;
+pub const TASK_COMM_LEN: usize = 32;
+pub const TASK_COMM_SHORT_LEN: usize = 16;
+pub const DNAME_INLINE_LEN: usize = 32;
+pub const VERSION_LEN_MAX: usize = 16;
+pub const IF_MAC_LEN_MAX: usize = 20;
+pub const IF_INDEX_LEN_MAX: usize = 8;
+pub const FILENAME_LEN_MAX: usize = 32;
+pub const FILEPATH_LEN_MAX: usize = 96;
+pub const FILEPATH_NODE_MAX: usize = 16;
+pub const FILE_READ_LEN_MAX: usize = 4096;
+pub const FILE_EVENTS_LEN_MAX: usize = 256;
+pub const FILE_PERMS_LEN_MAX: usize = 32;
+pub const CMD_LEN_MAX: usize = 512;
+pub const CMD_OUTPUT_LEN_MAX: usize = 1024;
+pub const JSON_OUT_LEN_MAX: usize = 8192;
+pub const FS_EVENT_MAX: usize = 16;
+pub const MODE_LEN_MAX: usize = 12;
+pub const DATETIME_LEN_MAX: usize = 64;
+pub const DEV_NAME_LEN_MAX: usize = 32;
+pub const DEV_FSTYPE_LEN_MAX: usize = 8;
+pub const TOKEN_LEN_MAX: usize = 64;
+pub const DBG_LEN_MAX: usize = 16;
+pub const UNIX_SOCKET_PATH_MAX: usize = 108;
 
-const fn key_pid_ino(p: u64, i: u64) -> u64 {
+pub const fn key_pid_ino(p: u64, i: u64) -> u64 {
     (p << 32) | i
 }
 
-const fn getdev(dev: u64) -> u32 {
+pub const fn getdev(dev: u64) -> u32 {
     ((dev >> 20) as u32) << 8 | (dev & ((1u64 << 20) - 1)) as u32
 }
 
 // define macros for startup requirement checks
-const CHECK_MAX: usize = 3;
-const CHECK_MSG_LEN_MAX: usize = 64;
+pub const CHECK_MAX: usize = 3;
+pub const CHECK_MSG_LEN_MAX: usize = 64;
 
 #[derive(Debug)]
-enum Check {
+pub enum Check {
     Fail,
     Ok,
     Warn,
@@ -222,90 +222,90 @@ enum Check {
 
 // define filesystem event info for ringbuffer event handler
 #[repr(C)]
-struct FsEventInfo {
-    index: i32,
-    dentry: *mut core::ffi::c_void,
-    dentry_old: *mut core::ffi::c_void,
-    func: *const u8,
+pub struct FsEventInfo {
+    pub index: i32,
+    pub dentry: *mut core::ffi::c_void,
+    pub dentry_old: *mut core::ffi::c_void,
+    pub func: *const u8,
 }
 
 // define common record sent to ringbuffer for user
 #[repr(C)]
-struct Record {
-    r#type: u32,
-    ts: u64,
+pub struct Record {
+    pub r#type: u32,
+    pub ts: u64,
 }
 
 #[repr(C)]
-union FileNameUnion {
-    split: core::mem::ManuallyDrop<FileNameSplit>,
-    full: [u8; FILENAME_LEN_MAX],
+pub union FileNameUnion {
+    pub split: core::mem::ManuallyDrop<FileNameSplit>,
+    pub full: [u8; FILENAME_LEN_MAX],
 }
 
 #[repr(C)]
-struct FileNameSplit {
-    filename_from: [u8; FILENAME_LEN_MAX / 2],
-    filename_to: [u8; FILENAME_LEN_MAX / 2],
+pub struct FileNameSplit {
+    pub filename_from: [u8; FILENAME_LEN_MAX / 2],
+    pub filename_to: [u8; FILENAME_LEN_MAX / 2],
 }
 
 #[repr(C)]
-struct RecordFs {
-    rc: Record,
-    events: u32,
-    event: [u32; FS_EVENT_MAX],
-    ino: u32,
-    imode: u32,
-    inlink: u32,
-    isize: u64,
-    atime_nsec: u64,
-    mtime_nsec: u64,
-    ctime_nsec: u64,
-    isize_first: u64,
-    filepath: [u8; FILEPATH_LEN_MAX],
-    filename: FileNameUnion,
+pub struct RecordFs {
+    pub rc: Record,
+    pub events: u32,
+    pub event: [u32; FS_EVENT_MAX],
+    pub ino: u32,
+    pub imode: u32,
+    pub inlink: u32,
+    pub isize: u64,
+    pub atime_nsec: u64,
+    pub mtime_nsec: u64,
+    pub ctime_nsec: u64,
+    pub isize_first: u64,
+    pub filepath: [u8; FILEPATH_LEN_MAX],
+    pub filename: FileNameUnion,
 }
 
 // define ringbuffer stats collected on records
 #[derive(Debug)]
-struct Stats {
-    fs_records: u64,
-    fs_records_deleted: u64,
-    fs_records_dropped: u64,
-    fs_records_rb_max: u64,
-    fs_events: u64,
+pub struct Stats {
+    pub fs_records: u64,
+    pub fs_records_deleted: u64,
+    pub fs_records_dropped: u64,
+    pub fs_records_rb_max: u64,
+    pub fs_events: u64,
 }
 
 // define output types
-const JSON_SUB_KEY_MAX: usize = 16;
-const JSON_KEY_LEN_MAX: usize = 32;
-const JSON_LEGEND_LEN_MAX: usize = 128;
-const JSON_TYPE_MAX: usize = 3;
-const JSON_FULL: usize = 0;
-const JSON_MIN: usize = 1;
-const TABLE_OUTPUT: usize = 2;
+pub const JSON_SUB_KEY_MAX: usize = 16;
+pub const JSON_KEY_LEN_MAX: usize = 32;
+pub const JSON_LEGEND_LEN_MAX: usize = 128;
+pub const JSON_TYPE_MAX: usize = 3;
+pub const JSON_FULL: usize = 0;
+pub const JSON_MIN: usize = 1;
+pub const TABLE_OUTPUT: usize = 2;
 
 #[repr(C)]
-struct JsonKey {
-    index: usize,
-    jtypekey: [[u8; JSON_KEY_LEN_MAX]; JSON_TYPE_MAX],
-    jlegend: [u8; JSON_LEGEND_LEN_MAX],
+pub struct JsonKey {
+    pub index: usize,
+    pub jtypekey: [[u8; JSON_KEY_LEN_MAX]; JSON_TYPE_MAX],
+    pub jlegend: [u8; JSON_LEGEND_LEN_MAX],
 }
 
 #[repr(C)]
-struct JsonSubKey {
-    index: usize,
-    sub: [JsonSubKeyEntry; JSON_SUB_KEY_MAX],
+pub struct JsonSubKey {
+    pub index: usize,
+    pub sub: [JsonSubKeyEntry; JSON_SUB_KEY_MAX],
 }
 
 #[repr(C)]
-struct JsonSubKeyEntry {
-    jkey: [u8; JSON_KEY_LEN_MAX],
-    jlegend: [u8; JSON_LEGEND_LEN_MAX],
+pub struct JsonSubKeyEntry {
+    pub jkey: [u8; JSON_KEY_LEN_MAX],
+    pub jlegend: [u8; JSON_LEGEND_LEN_MAX],
 }
 
 // define json key index
 #[derive(Debug)]
-enum IndexJsonKey {
+pub enum IndexJsonKey {
     InfoTimestamp,
     FilePath,
     File,
@@ -324,14 +324,14 @@ enum IndexJsonKey {
 
 // JSON container types
 #[derive(Debug)]
-enum MkjsonContainerType {
+pub enum MkjsonContainerType {
     Arr,
     Obj,
 }
 
 // JSON data types
 #[derive(Debug)]
-enum MkjsonValueType {
+pub enum MkjsonValueType {
     String,
     Timestamp,
     Json,
@@ -361,13 +361,13 @@ enum MkjsonValueType {
 
 // define json output messages
 #[derive(Debug)]
-enum JsonObj {
+pub enum JsonObj {
     Info,
     File,
     Max,
 }
 
-static CRC64_TAB: [u64; 256] = [
+pub static CRC64_TAB: [u64; 256] = [
     0x0000000000000000, 0x7ad870c830358979, 0xf5b0e190606b12f2, 0x8f689158505e9b8b,
     0xc038e5739841b68f, 0xbae095bba8743ff6, 0x358804e3f82aa47d, 0x4f50742bc81f2d04,
     0xab28ecb46814fe75, 0xd1f09c7c5821770c, 0x5e980d24087fec87, 0x24407dec384a65fe,
@@ -434,7 +434,7 @@ static CRC64_TAB: [u64; 256] = [
     0xa6df411fbfb21ca3, 0xdc0731d78f879fda, 0x536fa08fdfd90e51, 0x29b7d047efec8728,
 ];
 
-fn crc64(data: &[u8]) -> u64 {
+pub fn crc64(data: &[u8]) -> u64 {
     let mut crc: u64 = 0;
     for &byte in data {
         let idx = ((crc >> 56) as u8 ^ byte) as usize;
