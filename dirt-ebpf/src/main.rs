@@ -4,6 +4,7 @@
 use dirt_common::constants::*;
 
 use core::{mem, ptr, slice};
+use core::ffi::c_void;
 
 use aya_ebpf::{
     macros::{map, kprobe, kretprobe},
