@@ -41,6 +41,21 @@ static mut HEAP_RECORD_FS: PerCpuArray<RECORD_FS> = PerCpuArray::new();
 #[map(name = "stats")]
 static mut STATS: Array<STATS> = Array::new();
 
+#[no_mangle]
+static mut ts_start: u64 = 0;
+
+#[no_mangle]
+static mut agg_events_max: u32 = 0;
+
+#[no_mangle]
+static mut pid_self: pid_t = 0;
+
+#[no_mangle]
+static mut pid_shell: pid_t = 0;
+
+#[no_mangle]
+static mut monitor: u32 = MONITOR_NONE;
+
 #[inline(always)]
 fn handle_fs_event(ctx: *mut c_void, event: *const FsEventInfo) -> i32 {
     unsafe {
