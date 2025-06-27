@@ -6,6 +6,7 @@ pub const KERNEL_MAJOR_MIN: u32 = 10;
 pub const MONITOR_NONE: u32 = 0x1;
 pub const MONITOR_FILE: u32 = 0x2;
 
+#[macro_export]
 macro_rules! kprobe_switch {
     ($monitor_type:expr) => {
         if unsafe { MONITOR & $monitor_type } == 0 {
