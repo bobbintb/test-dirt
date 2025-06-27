@@ -1,25 +1,38 @@
 #![no_std]
 #![no_main]
-
+mod vmlinux;
+use vmlinux::*;
+use core::{ptr, mem};
+use core::mem::size_of;
+use core::panic::PanicInfo;
 use dirt_common::kprobe_switch;
+use dirt_common::constants::*;
+use dirt_common::constants::IndexFsEvent::*;
 use aya_ebpf::{
-    helpers::{bpf_get_current_pid_tgid, bpf_ktime_get_ns, bpf_printk, bpf_probe_read_kernel_str},
-    macros::{kprobe, kretprobe, map, tracepoint},
-    maps::{Array, HashMap, LruHashMap, PerCpuArray, RingBuf},
-    programs::{KProbeContext, RetProbeContext},
+    helpers::{bpf_get_stack, bpf_get_current_pid_tgid, bpf_ktime_get_ns, bpf_printk, bpf_probe_read_kernel_str_bytes},
+    macros::{kprobe, kretprobe, map},
+    maps::{Array, LruHashMap, PerCpuArray, RingBuf},
+    programs::{ProbeContext, RetProbeContext},
 };
 
-use core::mem::size_of;
-use dirt_common::*; // assumes the header conversion lives in this crate
+#[panic_handler]
+fn panic(_info: &PanicInfo) -> ! {
+    loop {}
+}
 
 /* bpf maps */
 
 #[map(name = "ringbuf_records")]
-static mut RINGBUF_RECORDS: RingBuf<RECORD_FS> =
-    RingBuf::<RECORD_FS>::with_max_entries((size_of::<RECORD_FS>() * 8192) as u32);
+static mut RINGBUF_RECORDS: RingBuf = RingBuf::with_byte_size(
+    (core::mem::size_of::<RECORD_FS>() * 8192) as u32,
+    0,
+);
 
 #[map(name = "hash_records")]
-static mut HASH_RECORDS: LruHashMap<u64, RECORD_FS> = LruHashMap::with_max_entries(MAP_RECORDS_MAX);
+static mut HASH_RECORDS: LruHashMap<u64, RECORD_FS> = LruHashMap::with_max_entries(
+    MAP_RECORDS_MAX as u32,
+    0,
+);
 
 #[map(name = "heap_record_fs")]
 static mut HEAP_RECORD_FS: PerCpuArray<RECORD_FS> = PerCpuArray::with_max_entries(1);
@@ -27,6 +40,7 @@ static mut HEAP_RECORD_FS: PerCpuArray<RECORD_FS> = PerCpuArray::with_max_entrie
 #[map(name = "stats")]
 static mut STATS_MAP: Array<STATS> = Array::with_max_entries(1);
 /* global variables shared with userspace */
+type pid_t = i32;
 #[no_mangle]
 pub static mut ts_start: u64 = 0;
 #[no_mangle]
@@ -42,14 +56,14 @@ pub static mut monitor: u32 = MONITOR_NONE;
 pub static mut debug: [u8; DBG_LEN_MAX] = [0; DBG_LEN_MAX];
 
 #[repr(C)]
-pub struct FS_EVENT_INFO {
+pub struct FsEventInfo {
     pub index: i32,
-    pub dentry: *mut Dentry,
-    pub dentry_old: *mut Dentry,
+    pub dentry: *mut dentry,
+    pub dentry_old: *mut dentry,
     pub func: *mut i8,
 }
-unsafe fn handle_fs_event(ctx: *mut core::ffi::c_void, event: &FS_EVENT_INFO) -> i32 {
-    if event.index == I_ACCESS || event.index == I_ATTRIB {
+unsafe fn handle_fs_event(ctx: *mut core::ffi::c_void, event: &FsEventInfo) -> i32 {
+    if event.index == IAccess || event.index == IAttrib {
         return 0;
     }
 
@@ -57,7 +71,8 @@ unsafe fn handle_fs_event(ctx: *mut core::ffi::c_void, event: &FS_EVENT_INFO) ->
     if pid == pid_self {
         return 0;
     }
-
+	
+	let index = event.index;
     let dentry = event.dentry;
     let dentry_old = event.dentry_old;
     let func = event.func;
@@ -69,7 +84,7 @@ unsafe fn handle_fs_event(ctx: *mut core::ffi::c_void, event: &FS_EVENT_INFO) ->
     let inode = unsafe { core::ptr::read_unaligned(&(*inode_ptr).d_inode) };
     let mut filename = [0u8; FILENAME_LEN_MAX];
     let name_ptr = unsafe { core::ptr::read_unaligned(&(*dentry).d_name.name) };
-    let _ = unsafe { bpf_probe_read_kernel_str(&mut filename, name_ptr) };
+    let _ = unsafe { bpf_probe_read_kernel_str_bytes(&mut filename, name_ptr) };
 
     if inode.is_null() || filename[0] == 0 {
         return 0;
@@ -90,10 +105,10 @@ unsafe fn handle_fs_event(ctx: *mut core::ffi::c_void, event: &FS_EVENT_INFO) ->
     let s = STATS_MAP.get_ptr_mut(0).as_mut();
 
     if let Some(rec) = r {
-        if fsevt[event.index as usize].value == crate::FS_MOVED_TO {
+        if FSEVT[event.index as usize].value == crate::FS_MOVED_TO {
             rec.filename_to = [0; FILENAME_LEN_MAX];
             let name_ptr = unsafe { core::ptr::read_unaligned(&(*dentry).d_name.name) };
-            let _ = unsafe { bpf_probe_read_kernel_str(&mut rec.filename_to, name_ptr) };
+            let _ = unsafe { bpf_probe_read_kernel_str_bytes(&mut rec.filename_to, name_ptr) };
         }
         rec.rc.ts = ts_event;
     } else {
@@ -107,7 +122,7 @@ unsafe fn handle_fs_event(ctx: *mut core::ffi::c_void, event: &FS_EVENT_INFO) ->
         r.ino = ino;
         r.filename = [0; FILENAME_LEN_MAX];
         let name_ptr = unsafe { core::ptr::read_unaligned(&(*dentry).d_name.name) };
-        let _ = unsafe { bpf_probe_read_kernel_str(&mut r.filename, name_ptr) };
+        let _ = unsafe { bpf_probe_read_kernel_str_bytes(&mut r.filename, name_ptr) };
         r.isize_first = unsafe { core::ptr::read_unaligned(&(*inode).i_size) };
 
         let mut d = dentry;
@@ -135,7 +150,7 @@ unsafe fn handle_fs_event(ctx: *mut core::ffi::c_void, event: &FS_EVENT_INFO) ->
         for i in (1..=num_nodes).rev() {
             if !pathnode[i].is_null() && offset < FILENAME_LEN_MAX - DNAME_INLINE_LEN {
                 let len =
-                    bpf_probe_read_kernel_str(&mut r.filepath[offset..], pathnode[i] as *const u8)
+                    bpf_probe_read_kernel_str_bytes(&mut r.filepath[offset..], pathnode[i] as *const u8)
                         .unwrap_or(0);
 
                 if len > 0 && offset + len < FILENAME_LEN_MAX {
@@ -165,7 +180,7 @@ unsafe fn handle_fs_event(ctx: *mut core::ffi::c_void, event: &FS_EVENT_INFO) ->
     r.imode = imode;
     r.isize = unsafe { core::ptr::read_unaligned(&(*inode).i_size) };
     r.inlink = unsafe { core::ptr::read_unaligned(&(*inode).i_nlink) };
-    if event.index == I_CREATE && !dentry_old.is_null() {
+    if event.index == ICreate && !dentry_old.is_null() {
         r.inlink += 1;
     }
 
@@ -190,13 +205,14 @@ unsafe fn handle_fs_event(ctx: *mut core::ffi::c_void, event: &FS_EVENT_INFO) ->
     }
 
     let mut agg_end = false;
-    if matches!(
-        event.index,
-        I_CLOSE_WRITE | I_CLOSE_NOWRITE | I_DELETE | I_MOVED_TO
-    ) || (event.index == I_CREATE && (S_ISLNK(imode) || r.inlink > 1))
-    {
-        agg_end = true;
-    }
+	if index == ICloseWrite
+		|| index == ICloseNowrite
+		|| index == IDelete
+		|| index == IMovedTo
+		|| (index == ICreate && (S_ISLNK(imode) || r.inlink > 1))
+	{
+		agg_end = true;
+	}
 
     if !agg_end && agg_events_max > 0 && r.events >= agg_events_max {
         agg_end = true;
@@ -225,7 +241,7 @@ unsafe fn handle_fs_event(ctx: *mut core::ffi::c_void, event: &FS_EVENT_INFO) ->
 
     if let Some(s) = STATS_MAP.get_ptr_mut(0).as_mut() {
         let mut rsz = mem::size_of::<RECORD_FS>();
-        rsz += (8 - rsz % 8);
+        rsz += 8 - rsz % 8;
         if s.fs_records == 1 {
             s.fs_records_rb_max = RINGBUF_RECORDS.ring_size() / rsz as u64;
         }
@@ -234,7 +250,7 @@ unsafe fn handle_fs_event(ctx: *mut core::ffi::c_void, event: &FS_EVENT_INFO) ->
     0
 }
 #[kretprobe]
-pub fn do_filp_open(ctx: KRetProbeContext) -> i32 {
+pub fn do_filp_open(ctx: RetProbeContext) -> i32 {
     unsafe {
         kprobe_switch!(MONITOR_FILE);
         let filp: *mut file = ctx.ret() as *mut file;
@@ -242,7 +258,7 @@ pub fn do_filp_open(ctx: KRetProbeContext) -> i32 {
         if f_mode & FMODE_CREATED != 0 {
             let dentry = unsafe { core::ptr::read_unaligned(&(*filp).f_path.dentry) };
             let event = FsEventInfo {
-                index: I_CREATE,
+                index: ICreate,
                 dentry,
                 dentry_old: core::ptr::null_mut(),
                 func: b"do_filp_open\0".as_ptr() as *mut i8,
@@ -254,13 +270,13 @@ pub fn do_filp_open(ctx: KRetProbeContext) -> i32 {
     }
 }
 #[kprobe]
-pub fn security_inode_link(ctx: KProbeContext) -> i32 {
+pub fn security_inode_link(ctx: ProbeContext) -> i32 {
     unsafe {
         kprobe_switch!(MONITOR_FILE);
         let old_dentry = ctx.arg::<*mut dentry>(0);
         let new_dentry = ctx.arg::<*mut dentry>(2);
         let event = FsEventInfo {
-            index: I_CREATE,
+            index: ICreate,
             dentry: new_dentry,
             dentry_old: old_dentry,
             func: b"security_inode_link\0".as_ptr() as *mut i8,
@@ -268,8 +284,10 @@ pub fn security_inode_link(ctx: KProbeContext) -> i32 {
         handle_fs_event(ctx.as_ptr(), &event)
     }
 }
+
+static mut DENTRY_SYMLINK: *mut dentry = core::ptr::null_mut();
 #[kprobe]
-pub fn security_inode_symlink(ctx: KProbeContext) -> i32 {
+pub fn security_inode_symlink(ctx: ProbeContext) -> i32 {
     unsafe {
         kprobe_switch!(MONITOR_FILE);
         DENTRY_SYMLINK = ctx.arg::<*mut dentry>(1);
@@ -278,7 +296,7 @@ pub fn security_inode_symlink(ctx: KProbeContext) -> i32 {
 }
 
 #[kprobe]
-pub fn dput(ctx: KProbeContext) -> i32 {
+pub fn dput(ctx: ProbeContext) -> i32 {
     unsafe {
         kprobe_switch!(MONITOR_FILE);
         let dentry = ctx.arg::<*mut dentry>(0);
@@ -289,7 +307,7 @@ pub fn dput(ctx: KProbeContext) -> i32 {
         }
         DENTRY_SYMLINK = ptr::null_mut();
         let event = FsEventInfo {
-            index: I_CREATE,
+            index: ICreate,
             dentry,
             dentry_old: ptr::null_mut(),
             func: b"dput+security_inode_symlink\0".as_ptr() as *mut i8,
@@ -299,14 +317,14 @@ pub fn dput(ctx: KProbeContext) -> i32 {
 }
 
 #[kprobe]
-pub fn __fsnotify_parent(ctx: KProbeContext) -> i32 {
+pub fn __fsnotify_parent(ctx: ProbeContext) -> i32 {
     unsafe {
         kprobe_switch!(MONITOR_FILE);
         let dentry = ctx.arg::<*mut dentry>(0);
         let mask = ctx.arg::<u32>(1);
         if mask & FS_ATTRIB != 0 {
             let event = FsEventInfo {
-                index: I_ATTRIB,
+                index: IAttrib,
                 dentry,
                 dentry_old: ptr::null_mut(),
                 func: b"__fsnotify_parent\0".as_ptr() as *mut i8,
@@ -315,7 +333,7 @@ pub fn __fsnotify_parent(ctx: KProbeContext) -> i32 {
         }
         if mask & FS_MODIFY != 0 {
             let event = FsEventInfo {
-                index: I_MODIFY,
+                index: IModify,
                 dentry,
                 dentry_old: ptr::null_mut(),
                 func: b"__fsnotify_parent\0".as_ptr() as *mut i8,
@@ -324,7 +342,7 @@ pub fn __fsnotify_parent(ctx: KProbeContext) -> i32 {
         }
         if mask & FS_ACCESS != 0 {
             let event = FsEventInfo {
-                index: I_ACCESS,
+                index: IAccess,
                 dentry,
                 dentry_old: ptr::null_mut(),
                 func: b"__fsnotify_parent\0".as_ptr() as *mut i8,
@@ -335,7 +353,7 @@ pub fn __fsnotify_parent(ctx: KProbeContext) -> i32 {
     }
 }
 #[kprobe]
-pub fn security_inode_rename(ctx: KProbeContext) -> i32 {
+pub fn security_inode_rename(ctx: ProbeContext) -> i32 {
     unsafe {
         kprobe_switch!(MONITOR_FILE);
         let old_dentry = ctx.arg::<*mut dentry>(1);
@@ -348,14 +366,14 @@ pub fn security_inode_rename(ctx: KProbeContext) -> i32 {
         }
         let new_dentry = ctx.arg::<*mut dentry>(3);
         let event_from = FsEventInfo {
-            index: I_MOVED_FROM,
+            index: IMovedFrom,
             dentry: old_dentry,
             dentry_old: ptr::null_mut(),
             func: b"security_inode_rename\0".as_ptr() as *mut i8,
         };
         handle_fs_event(ctx.as_ptr(), &event_from);
         let event_to = FsEventInfo {
-            index: I_MOVED_TO,
+            index: IMovedTo,
             dentry: new_dentry,
             dentry_old: old_dentry,
             func: b"security_inode_rename\0".as_ptr() as *mut i8,
@@ -365,12 +383,12 @@ pub fn security_inode_rename(ctx: KProbeContext) -> i32 {
     }
 }
 #[kprobe]
-pub fn security_inode_unlink(ctx: KProbeContext) -> i32 {
+pub fn security_inode_unlink(ctx: ProbeContext) -> i32 {
     unsafe {
         kprobe_switch!(MONITOR_FILE);
         let dentry = ctx.arg::<*mut dentry>(1);
         let event = FsEventInfo {
-            index: I_DELETE,
+            index: IDelete,
             dentry,
             dentry_old: ptr::null_mut(),
             func: b"security_inode_unlink\0".as_ptr() as *mut i8,
@@ -395,7 +413,7 @@ pub fn debug_dump_stack(ctx: &ProbeContext, func: &str) {
 
     if kstacklen > 0 {
         unsafe {
-            bpf_printk(
+            bpf_printk!(
                 b"KERNEL STACK (%u): %s\0",
                 kstacklen / size_of::<i64>(),
                 func.as_ptr(),
@@ -406,7 +424,7 @@ pub fn debug_dump_stack(ctx: &ProbeContext, func: &str) {
             if (kstacklen as usize) > i * size_of::<i64>() {
                 let addr = unsafe { DEBUG_STACK[i] };
                 unsafe {
-                    bpf_printk(b"  %pB\0", addr as *const _);
+                    bpf_printk!(b"  %pB\0", addr as *const _);
                 }
             }
         }
