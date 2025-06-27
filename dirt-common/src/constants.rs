@@ -8,12 +8,19 @@ pub const MONITOR_FILE: u32 = 0x2;
 
 #[macro_export]
 macro_rules! kprobe_switch {
-    ($monitor_type:expr) => {
-        if unsafe { MONITOR & $monitor_type } == 0 {
-            return 0;
+    ($monitor_type:expr) => {{
+        // bring the global into scope
+        extern "C" {
+            static mut monitor: u32;
         }
-    };
+        unsafe {
+            if monitor & $monitor_type == 0 {
+                return 0;
+            }
+        }
+    }};
 }
+
 /* define file system event values */
 pub const FS_ACCESS: u32         = 0x0000_0001;
 pub const FS_MODIFY: u32         = 0x0000_0002;
