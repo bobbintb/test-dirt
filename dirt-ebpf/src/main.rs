@@ -92,7 +92,7 @@ unsafe fn handle_fs_event(ctx: *mut core::ffi::c_void, event: &FsEventInfo) -> i
         return 0;
     }
 
-    let pid = (bpf_get_current_pid_tgid() >> 32) as i32;
+    let pid = (bpf_get_current_pid_tgid() >> 32) as u32;
     if pid == pid_self {
         return 0;
     }
