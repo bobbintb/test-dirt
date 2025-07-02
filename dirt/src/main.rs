@@ -2,6 +2,7 @@ use aya::programs::KProbe;
 #[rustfmt::skip]
 use log::{debug, warn};
 use tokio::signal;
+use anyhow::anyhow; // Added for anyhow::anyhow!
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -41,7 +42,7 @@ async fn main() -> anyhow::Result<()> {
         "security_inode_rename",
         "security_inode_unlink",
     ] {
-        let program: &mut KProbe = ebpf.program_mut("dirt")?.try_into()?;
+        let program: &mut KProbe = ebpf.program_mut("dirt").ok_or_else(|| anyhow!("Failed to find program 'dirt' in eBPF object"))?.try_into()?;
         program.load()?;
         program.attach(func, 0)?;
     }

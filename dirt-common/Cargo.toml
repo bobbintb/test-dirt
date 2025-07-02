@@ -11,7 +11,6 @@ user = ["aya"]
 
 [dependencies]
 aya = { workspace = true, optional = true }
-aya-ebpf = { workspace = true, default-features = false, optional = true } # Added aya-ebpf
 
 [lib]
 path = "src/lib.rs"
