@@ -1,4 +1,4 @@
-use which::which;
+use std::process::Command;
 
 /// Building this crate has an undeclared dependency on the `bpf-linker` binary. This would be
 /// better expressed by [artifact-dependencies][bindeps] but issues such as
@@ -12,9 +12,17 @@ use which::which;
 ///
 /// [bindeps]: https://doc.rust-lang.org/nightly/cargo/reference/unstable.html?highlight=feature#artifact-dependencies
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let bpf_linker = which("bpf-linker")?;
-    println!("cargo:rerun-if-changed={}", bpf_linker.to_str().unwrap());
-    aya_gen::generate("vmlinux.h")?;
-    Ok(())
+fn main() {
+    let output = Command::new("aya-tool")
+        .args(["generate", "task_struct", "dentry"])
+        .output()
+        .expect("failed to run aya-tool");
+
+    if !output.status.success() {
+        panic!("aya-tool failed");
+    }
+
+    std::fs::write("src/vmlinux.rs", output.stdout).expect("failed to write vmlinux.rs");
+
+    println!("cargo:rerun-if-changed=build.rs");
 }
