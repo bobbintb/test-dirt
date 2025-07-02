@@ -207,8 +207,8 @@ pub const DBG_LEN_MAX: usize = 16;
 pub const UNIX_SOCKET_PATH_MAX: usize = 10;
 
 #[inline(always)]
-pub const fn key_pid_ino(p: u32, i: u32) -> u64 {
-    ((p as u64) << 32) | (i as u64)
+pub const fn key_pid_ino(p: u32, i: u64) -> u64 {
+    ((p as u64) << 32) | i
 }
 
 #[inline(always)]
