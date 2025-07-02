@@ -76,7 +76,7 @@ unsafe fn handle_fs_event(ctx: *mut core::ffi::c_void, event: &FsEventInfo) -> i
     let mut func: *mut i8 = ptr::null_mut();
     let mut agg_end: bool = false;
     let mut imode: umode_t = 0;
-    let mut pid: i32 = 0;
+    let mut pid: pid_t = 0;
     let ts_event: u64 = bpf_ktime_get_ns();
     let mut ts_now: u64 = 0;
     let mut num_nodes: u32 = 0;
