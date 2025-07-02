@@ -7,6 +7,7 @@ use core::mem::size_of;
 use core::panic::PanicInfo;
 use dirt_common::kprobe_switch;
 use dirt_common::constants::*;
+use dirt_common::constants::key_pid_ino;
 use dirt_common::constants::IndexFsEvent::*;
 use aya_ebpf::{
     helpers::{bpf_get_stack, bpf_get_current_pid_tgid, bpf_ktime_get_ns, bpf_printk, bpf_probe_read_kernel_str_bytes},
@@ -41,7 +42,7 @@ static mut HEAP_RECORD_FS: PerCpuArray<RECORD_FS> = PerCpuArray::with_max_entrie
 #[map(name = "stats")]
 static mut STATS_MAP: Array<STATS> = Array::with_max_entries(1, 0);
 /* global variables shared with userspace */
-type pid_t = i32;
+type pid_t = u32;
 #[no_mangle]
 pub static mut ts_start: u64 = 0;
 #[no_mangle]
@@ -76,7 +77,7 @@ unsafe fn handle_fs_event(ctx: *mut core::ffi::c_void, event: &FsEventInfo) -> i
     let mut func: *mut i8 = ptr::null_mut();
     let mut agg_end: bool = false;
     let mut imode: umode_t = 0;
-    let mut pid: pid_t = 0;
+    let mut pid: i32 = 0;
     let ts_event: u64 = bpf_ktime_get_ns();
     let mut ts_now: u64 = 0;
     let mut num_nodes: u32 = 0;
@@ -85,7 +86,7 @@ unsafe fn handle_fs_event(ctx: *mut core::ffi::c_void, event: &FsEventInfo) -> i
     let mut key: u64 = 0;
     let zero: u32 = 0;
     let mut index: u32 = 0;
-    let mut ino: u32 = 0;
+    let mut ino: u64 = 0;
     let mut cnt: u32 = 0;
 	
     if event.index == IAccess || event.index == IAttrib {
@@ -109,14 +110,14 @@ unsafe fn handle_fs_event(ctx: *mut core::ffi::c_void, event: &FsEventInfo) -> i
     let inode = unsafe { core::ptr::read_unaligned(&(*inode_ptr).d_inode) };
     let mut filename = [0u8; FILENAME_LEN_MAX];
     let name_ptr = unsafe { core::ptr::read_unaligned(&(*dentry).d_name.name) };
-    let _ = unsafe { bpf_probe_read_kernel_str_bytes(&mut filename, name_ptr) };
+    let _ = unsafe { bpf_probe_read_kernel_str_bytes(name_ptr, &mut filename) };
 
     if inode.is_null() || filename[0] == 0 {
         return 0;
     }
 
     let ino = unsafe { core::ptr::read_unaligned(&(*inode).i_ino) };
-    let imode = unsafe { core::ptr::read_unaligned(&(*inode).i_mode) };
+	let imode = unsafe { core::ptr::read_unaligned(&(*inode).i_mode) } as u32;
     if !(s_isreg(imode) || s_islnk(imode)) {
         return 0;
     }
@@ -386,14 +387,17 @@ pub fn __fsnotify_parent(ctx: ProbeContext) -> i32 {
 pub fn security_inode_rename(ctx: ProbeContext) -> i32 {
     unsafe {
         kprobe_switch!(MONITOR_FILE);
-        let old_dentry = ctx.arg::<*mut dentry>(1);
-        if {
-            let flags = unsafe { core::ptr::read_unaligned(&(*old_dentry).d_flags) };
-            (flags & DCACHE_ENTRY_TYPE) == DCACHE_DIRECTORY_TYPE
-                || (flags & DCACHE_ENTRY_TYPE) == DCACHE_AUTODIR_TYPE
-        } {
-            return 0;
-        }
+		let old_dentry = ctx.arg::<*mut dentry>(1);
+		if let Some(old_dentry_ptr) = old_dentry {
+			let flags = unsafe { core::ptr::read_unaligned(&(*old_dentry_ptr).d_flags) };
+			if (flags & DCACHE_ENTRY_TYPE) == DCACHE_DIRECTORY_TYPE
+				|| (flags & DCACHE_ENTRY_TYPE) == DCACHE_AUTODIR_TYPE
+			{
+				return 0;
+			}
+		} else {
+			return 0;
+		}
         let new_dentry = ctx.arg::<*mut dentry>(3);
         let event_from = FsEventInfo {
             index: IMovedFrom,
