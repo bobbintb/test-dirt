@@ -331,7 +331,7 @@ static mut DENTRY_SYMLINK: *mut dentry = core::ptr::null_mut();
 pub fn security_inode_symlink(ctx: ProbeContext) -> i32 {
     unsafe {
         kprobe_switch!(MONITOR_FILE);
-        DENTRY_SYMLINK = ctx.arg::<*mut dentry>(1);
+	DENTRY_SYMLINK = ctx.arg::<*mut dentry>(1).unwrap_or(core::ptr::null_mut());
         0
     }
 }
