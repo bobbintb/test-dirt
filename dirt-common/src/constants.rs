@@ -134,6 +134,7 @@ pub struct FS_EVENT {
     pub shortname2: [u8; 4],
 }
 #[repr(u16)]
+#[derive(PartialEq, Eq)]
 pub enum IndexFsEvent {
     ICreate,
     IOpen,
