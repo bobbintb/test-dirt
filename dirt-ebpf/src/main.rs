@@ -65,7 +65,7 @@ pub struct FsEventInfo {
     pub func: *mut i8,
 }
 unsafe fn handle_fs_event(ctx: *mut core::ffi::c_void, event: &FsEventInfo) -> i32 {
-	let mut dentry: *mut dentry = ptr::null_mut();
+    let mut dentry: *mut dentry = ptr::null_mut();
     let mut dentry_old: *mut dentry = ptr::null_mut();
     let mut inode: *mut inode = ptr::null_mut();
     let mut dparent: *mut dentry = ptr::null_mut();
@@ -88,7 +88,7 @@ unsafe fn handle_fs_event(ctx: *mut core::ffi::c_void, event: &FsEventInfo) -> i
     let mut index: u32 = 0;
     let mut ino: u64 = 0;
     let mut cnt: u32 = 0;
-	
+    
     if event.index == IAccess || event.index == IAttrib {
         return 0;
     }
@@ -97,8 +97,8 @@ unsafe fn handle_fs_event(ctx: *mut core::ffi::c_void, event: &FsEventInfo) -> i
     if pid == pid_self {
         return 0;
     }
-	
-	let index = event.index;
+    
+    let index = event.index;
     let dentry = event.dentry;
     let dentry_old = event.dentry_old;
     let func = event.func;
@@ -117,7 +117,7 @@ unsafe fn handle_fs_event(ctx: *mut core::ffi::c_void, event: &FsEventInfo) -> i
     }
 
     let ino = unsafe { core::ptr::read_unaligned(&(*inode).i_ino) };
-	let imode = unsafe { core::ptr::read_unaligned(&(*inode).i_mode) } as u32;
+    let imode = unsafe { core::ptr::read_unaligned(&(*inode).i_mode) } as u32;
     if !(s_isreg(imode) || s_islnk(imode)) {
         return 0;
     }
@@ -133,12 +133,12 @@ unsafe fn handle_fs_event(ctx: *mut core::ffi::c_void, event: &FsEventInfo) -> i
     if let Some(rec) = r {
         if FSEVT[event.index as usize].value == crate::FS_MOVED_TO {
             unsafe {
-				(*(*rec).filename_union.filenames).filename_to = [0; FILENAME_LEN_MAX / 2];
-			}
+                (*(*rec).filename_union.filenames).filename_to = [0; FILENAME_LEN_MAX / 2];
+            }
             let name_ptr = unsafe { core::ptr::read_unaligned(&(*dentry).d_name.name) };
             let _ = unsafe { bpf_probe_read_kernel_str_bytes(name_ptr, &mut filename) };
         }
-        rec.rc.ts = ts_event;
+        (*rec).rc.ts = ts_event;
     } else {
         let rec_ptr = HEAP_RECORD_FS.get_ptr_mut(0).as_mut();
         if rec_ptr.is_none() {
@@ -148,9 +148,9 @@ unsafe fn handle_fs_event(ctx: *mut core::ffi::c_void, event: &FsEventInfo) -> i
         let r = rec_ptr.unwrap();
         (**r).rc.ts = ts_event;
         (**r).ino = ino;
-        (**r).filename = [0; FILENAME_LEN_MAX];
+        (**r).filename_union.filename = [0; FILENAME_LEN_MAX];
         let name_ptr = unsafe { core::ptr::read_unaligned(&(*dentry).d_name.name) };
-        let _ = unsafe { bpf_probe_read_kernel_str_bytes(&mut (**r).filename, name_ptr) };
+        let _ = unsafe { bpf_probe_read_kernel_str_bytes(&mut (**r).filename_union.filename, name_ptr) };
         (**r).isize_first = unsafe { core::ptr::read_unaligned(&(*inode).i_size) };
 
         let mut d = dentry;
@@ -196,12 +196,16 @@ unsafe fn handle_fs_event(ctx: *mut core::ffi::c_void, event: &FsEventInfo) -> i
         (**r).inlink = 0;
 
         if let Some(s) = s {
-            s.fs_records += 1;
+			unsafe {
+                (**s).fs_records += 1;
+			}
         }
     }
 
     if let Some(s) = s {
-        s.fs_events += 1;
+		unsafe {
+			(**s).fs_events += 1;
+		}
     }
 
     let r = unsafe { HASH_RECORDS.get_ptr_mut(&key).unwrap().as_mut().unwrap() };
@@ -233,14 +237,14 @@ unsafe fn handle_fs_event(ctx: *mut core::ffi::c_void, event: &FsEventInfo) -> i
     }
 
     let mut agg_end = false;
-	if index == ICloseWrite
-		|| index == ICloseNowrite
-		|| index == IDelete
-		|| index == IMovedTo
-		|| (index == ICreate && (s_islnk(imode) || r.inlink > 1))
-	{
-		agg_end = true;
-	}
+    if index == ICloseWrite
+        || index == ICloseNowrite
+        || index == IDelete
+        || index == IMovedTo
+        || (index == ICreate && (s_islnk(imode) || r.inlink > 1))
+    {
+        agg_end = true;
+    }
 
     if !agg_end && agg_events_max > 0 && r.events >= agg_events_max {
         agg_end = true;
@@ -254,7 +258,9 @@ unsafe fn handle_fs_event(ctx: *mut core::ffi::c_void, event: &FsEventInfo) -> i
             .is_err()
         {
             if let Some(s) = s {
-                s.fs_records_dropped += 1;
+				unsafe {
+					(**s).fs_records_dropped += 1;
+				}
             }
         }
 
@@ -263,17 +269,23 @@ unsafe fn handle_fs_event(ctx: *mut core::ffi::c_void, event: &FsEventInfo) -> i
         }
 
         if let Some(s) = s {
-            s.fs_records_deleted += 1;
+            unsafe {
+                (**s).fs_records_deleted += 1;
+            }
         }
     }
 
     if let Some(s) = STATS_MAP.get_ptr_mut(0).as_mut() {
         let mut rsz = mem::size_of::<RECORD_FS>();
         rsz += 8 - rsz % 8;
-        if s.fs_records == 1 {
-            const RINGBUF_SIZE: u64 = (core::mem::size_of::<RECORD_FS>() * 8192) as u64;
-            s.fs_records_rb_max = RINGBUF_SIZE / rsz as u64;
-        }
+		unsafe {
+            if (**s).fs_records == 1 {
+                const RINGBUF_SIZE: u64 = (core::mem::size_of::<RECORD_FS>() * 8192) as u64;
+                unsafe {
+		    		(**s).fs_records_rb_max = RINGBUF_SIZE / rsz as u64;
+		    	}
+            }
+		}
     }
 
     0
@@ -389,17 +401,17 @@ pub fn __fsnotify_parent(ctx: ProbeContext) -> i32 {
 pub fn security_inode_rename(ctx: ProbeContext) -> i32 {
     unsafe {
         kprobe_switch!(MONITOR_FILE);
-		let old_dentry = ctx.arg::<*mut dentry>(1);
-		if let Some(old_dentry_ptr) = old_dentry {
-			let flags = unsafe { core::ptr::read_unaligned(&(*old_dentry_ptr).d_flags) };
-			if (flags & DCACHE_ENTRY_TYPE) == DCACHE_DIRECTORY_TYPE
-				|| (flags & DCACHE_ENTRY_TYPE) == DCACHE_AUTODIR_TYPE
-			{
-				return 0;
-			}
-		} else {
-			return 0;
-		}
+        let old_dentry = ctx.arg::<*mut dentry>(1);
+        if let Some(old_dentry_ptr) = old_dentry {
+            let flags = unsafe { core::ptr::read_unaligned(&(*old_dentry_ptr).d_flags) };
+            if (flags & DCACHE_ENTRY_TYPE) == DCACHE_DIRECTORY_TYPE
+                || (flags & DCACHE_ENTRY_TYPE) == DCACHE_AUTODIR_TYPE
+            {
+                return 0;
+            }
+        } else {
+            return 0;
+        }
         let new_dentry = ctx.arg::<*mut dentry>(3);
         let event_from = FsEventInfo {
             index: IMovedFrom,
