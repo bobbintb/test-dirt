@@ -13,16 +13,6 @@ use std::process::Command;
 /// [bindeps]: https://doc.rust-lang.org/nightly/cargo/reference/unstable.html?highlight=feature#artifact-dependencies
 
 fn main() {
-    let output = Command::new("aya-tool")
-        .args(["generate", "task_struct", "dentry"])
-        .output()
-        .expect("failed to run aya-tool");
-
-    if !output.status.success() {
-        panic!("aya-tool failed");
-    }
-
-    std::fs::write("src/vmlinux.rs", output.stdout).expect("failed to write vmlinux.rs");
-
-    println!("cargo:rerun-if-changed=build.rs");
+    let bpf_linker = which("bpf-linker").unwrap();
+    println!("cargo:rerun-if-changed={}", bpf_linker.to_str().unwrap());
 }
