@@ -42,15 +42,15 @@ static mut HEAP_RECORD_FS: PerCpuArray<RECORD_FS> = PerCpuArray::with_max_entrie
 #[map(name = "stats")]
 static mut STATS_MAP: Array<STATS> = Array::with_max_entries(1, 0);
 /* global variables shared with userspace */
-type pid_t = u32;
+type PidT = u32;
 #[no_mangle]
 pub static mut ts_start: u64 = 0;
 #[no_mangle]
 pub static mut agg_events_max: u32 = 0;
 #[no_mangle]
-pub static mut pid_self: pid_t = 0;
+pub static mut pid_self: PidT = 0;
 #[no_mangle]
-pub static mut pid_shell: pid_t = 0;
+pub static mut pid_shell: PidT = 0;
 #[no_mangle]
 pub static mut monitor: u32 = MONITOR_NONE;
 /* debug */
@@ -59,7 +59,7 @@ pub static mut debug: [u8; DBG_LEN_MAX] = [0; DBG_LEN_MAX];
 
 #[repr(C)]
 pub struct FsEventInfo {
-    pub index: i32,
+    pub index: IndexFsEvent,
     pub dentry: *mut dentry,
     pub dentry_old: *mut dentry,
     pub func: *mut i8,
@@ -132,7 +132,9 @@ unsafe fn handle_fs_event(ctx: *mut core::ffi::c_void, event: &FsEventInfo) -> i
 
     if let Some(rec) = r {
         if FSEVT[event.index as usize].value == crate::FS_MOVED_TO {
-            rec.filename_to = [0; FILENAME_LEN_MAX];
+            unsafe {
+				(*(*rec).filename_union.filenames).filename_to = [0; FILENAME_LEN_MAX / 2];
+			}
             let name_ptr = unsafe { core::ptr::read_unaligned(&(*dentry).d_name.name) };
             let _ = unsafe { bpf_probe_read_kernel_str_bytes(name_ptr, &mut filename) };
         }
